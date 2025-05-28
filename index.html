@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nguyễn Công Phúc - Social Network</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <h2>PhucBook</h2>
+            </div>
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Tìm kiếm trên PhucBook">
+            </div>
+        </div>
+        
+        <div class="header-center">
+            <div class="nav-item active">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-tv"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-gamepad"></i>
+            </div>
+        </div>
+        
+        <div class="header-right">
+            <div class="profile-menu">
+                <img src="https://via.placeholder.com/40x40/4267B2/ffffff?text=PC" alt="Profile" class="profile-pic">
+                <span>Công Phúc</span>
+            </div>
+            <div class="header-icon">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="header-icon">
+                <i class="fab fa-facebook-messenger"></i>
+            </div>
+            <div class="header-icon">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="header-icon">
+                <i class="fas fa-caret-down"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Left Sidebar -->
+        <aside class="left-sidebar">
+            <div class="sidebar-item">
+                <img src="https://via.placeholder.com/36x36/4267B2/ffffff?text=PC" alt="Profile">
+                <span>Nguyễn Công Phúc</span>
+            </div>
+            <div class="sidebar-item">
+                <img src="https://static.xx.fbcdn.net/rsrc.php/v3/yx/r/-XF4FQI2V_t.png" alt="Friends">
+                <span>Bạn bè</span>
+            </div>
+            <div class="sidebar-item">
+                <img src="https://static.xx.fbcdn.net/rsrc.php/v3/y8/r/S0U5ECzYUSu.png" alt="Groups">
+                <span>Nhóm</span>
+            </div>
+            <div class="sidebar-item">
+                <img src="https://static.xx.fbcdn.net/rsrc.php/v3/yG/r/A1HlI2LVo58.png" alt="Marketplace">
+                <span>Marketplace</span>
+            </div>
+            <div class="sidebar-item">
+                <img src="https://static.xx.fbcdn.net/rsrc.php/v3/y7/r/AYj2837MB_3.png" alt="Watch">
+                <span>Watch</span>
+            </div>
+            <div class="sidebar-item">
+                <i class="fas fa-robot"></i>
+                <span>AI & Robotics</span>
+            </div>
+            <div class="sidebar-item">
+                <i class="fas fa-graduation-cap"></i>
+                <span>HUMG University</span>
+            </div>
+            <div class="sidebar-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Đông Hưng, Thái Bình</span>
+            </div>
+        </aside>
+
+        <!-- Center Content -->
+        <section class="center-content">
+            <!-- Stories -->
+            <div class="stories-container">
+                <div class="story create-story">
+                    <div class="story-image">
+                        <img src="https://via.placeholder.com/112x200/4267B2/ffffff?text=PC" alt="Your story">
+                    </div>
+                    <div class="create-story-button">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <span>Tạo tin</span>
+                </div>
+                <div class="story">
+                    <div class="story-image">
+                        <img src="https://via.placeholder.com/112x200/42b883/ffffff?text=Robot" alt="Story">
+                    </div>
+                    <div class="story-profile">
+                        <img src="https://via.placeholder.com/40x40/4267B2/ffffff?text=R" alt="Profile">
+                    </div>
+                    <span>Robot Club</span>
+                </div>
+                <div class="story">
+                    <div class="story-image">
+                        <img src="https://via.placeholder.com/112x200/ff6b6b/ffffff?text=AI" alt="Story">
+                    </div>
+                    <div class="story-profile">
+                        <img src="https://via.placeholder.com/40x40/4267B2/ffffff?text=AI" alt="Profile">
+                    </div>
+                    <span>AI Community</span>
+                </div>
+            </div>
+
+            <!-- Create Post -->
+            <div class="create-post">
+                <div class="create-post-top">
+                    <img src="https://via.placeholder.com/40x40/4267B2/ffffff?text=PC" alt="Profile" class="profile-pic">
+                    <input type="text" placeholder="Công Phúc ơi, bạn đang nghĩ gì thế?" class="post-input">
+                </div>
+                <div class="create-post-bottom">
+                    <div class="post-option">
+                        <i class="fas fa-video" style="color: #f02849;"></i>
+                        <span>Video trực tiếp</span>
+                    </div>
+                    <div class="post-option">
+                        <i class="fas fa-images" style="color: #45bd62;"></i>
+                        <span>Ảnh/video</span>
+                    </div>
+                    <div class="post-option">
+                        <i class="fas fa-smile" style="color: #f7b928;"></i>
+                        <span>Cảm xúc/hoạt động</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posts -->
+            <div class="post">
+                <div class="post-header">
+                    <img src="https://via.placeholder.com/40x40/4267B2/ffffff?text=PC" alt="Profile" class="profile-pic">
+                    <div class="post-info">
+                        <h4>Nguyễn Công Phúc</h4>
+                        <span>2 giờ · <i class="fas fa-globe-americas"></i></span>
+                    </div>
+                    <div class="post-menu">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </div>
+                </div>
+                <div class="post-content">
+                    <p>Hôm nay có một buổi thực hành robot tuyệt vời tại trường HUMG! 🤖 Được học về AI và robotics thực sự là đam mê của mình. Cảm ơn các thầy cô và bạn bè đã hỗ trợ! 💪</p>
+                    <img src="https://via.placeholder.com/500x300/42b883/ffffff?text=Robot+Lab+HUMG" alt="Robot Lab">
+                </div>
+                <div class="post-stats">
+                    <div class="post-stats-left">
+                        <div class="reactions">
+                            <span class="reaction like">👍</span>
+                            <span class="reaction love">❤️</span>
+                            <span class="reaction wow">😮</span>
+                        </div>
+                        <span>125</span>
+                    </div>
+                    <div class="post-stats-right">
+                        <span>15 bình luận</span>
+                        <span>8 chia sẻ</span>
+                    </div>
+                </div>
+                <div class="post-actions">
+                    <div class="post-action">
+                        <i class="far fa-thumbs-up"></i>
+                        <span>Thích</span>
+                    </div>
+                    <div class="post-action">
+                        <i class="far fa-comment"></i>
+                        <span>Bình luận</span>
+                    </div>
+                    <div class="post-action">
+                        <i class="far fa-share"></i>
+                        <span>Chia sẻ</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- More Posts -->
+            <div class="post">
+                <div class="post-header">
+                    <img src="https://via.placeholder.com/40x40/4267B2/ffffff?text=PC" alt="Profile" class="profile-pic">
+                    <div class="post-info">
+                        <h4>Nguyễn Công Phúc</h4>
+                        <span>1 ngày · <i class="fas fa-globe-americas"></i></span>
+                    </div>
+                    <div class="post-menu">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </div>
+                </div>
+                <div class="post-content">
+                    <p>Cuối tuần vui vẻ với trận cầu lông cùng bạn bè! 🏸 Sau đó về nhà nghe nhạc và nghiên cứu thêm về AI. Cuộc sống sinh viên thật tuyệt! 😊</p>
+                    <div class="post-images">
+                        <img src="https://via.placeholder.com/250x200/ff6b6b/ffffff?text=Badminton" alt="Badminton">
+                        <img src="https://via.placeholder.com/250x200/4ecdc4/ffffff?text=Music" alt="Music">
+                    </div>
+                </div>
+                <div class="post-stats">
+                    <div class="post-stats-left">
+                        <div class="reactions">
+                            <span class="reaction like">👍</span>
+                            <span class="reaction love">❤️</span>
+                        </div>
+                        <span>89</span>
+                    </div>
+                    <div class="post-stats-right">
+                        <span>12 bình luận</span>
+                        <span>5 chia sẻ</span>
+                    </div>
+                </div>
+                <div class="post-actions">
+                    <div class="post-action">
+                        <i class="far fa-thumbs-up"></i>
+                        <span>Thích</span>
+                    </div>
+                    <div class="post-action">
+                        <i class="far fa-comment"></i>
+                        <span>Bình luận</span>
+                    </div>
+                    <div class="post-action">
+                        <i class="far fa-share"></i>
+                        <span>Chia sẻ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="post">
+                <div class="post-header">
+                    <img src="https://via.placeholder.com/40x40/4267B2/ffffff?text=PC" alt="Profile" class="profile-pic">
+                    <div class="post-info">
+                        <h4>Nguyễn Công Phúc</h4>
+                        <span>3 ngày · <i class="fas fa-globe-americas"></i></span>
+                    </div>
+                    <div class="post-menu">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </div>
+                </div>
+                <div class="post-content">
+                    <p>Chiến thắng ván cờ vua hôm nay! ♟️ Chiến thuật và tư duy logic giúp ích rất nhiều trong việc học về AI. Mọi thứ đều có liên quan đến nhau cả! 🧠</p>
+                    <img src="https://via.placeholder.com/500x300/2c3e50/ffffff?text=Chess+Victory" alt="Chess">
+                </div>
+                <div class="post-stats">
+                    <div class="post-stats-left">
+                        <div class="reactions">
+                            <span class="reaction like">👍</span>
+                            <span class="reaction wow">😮</span>
+                        </div>
+                        <span>67</span>
+                    </div>
+                    <div class="post-stats-right">
+                        <span>8 bình luận</span>
+                        <span>3 chia sẻ</span>
+                    </div>
+                </div>
+                <div class="post-actions">
+                    <div class="post-action">
+                        <i class="far fa-thumbs-up"></i>
+                        <span>Thích</span>
+                    </div>
+                    <div class="post-action">
+                        <i class="far fa-comment"></i>
+                        <span>Bình luận</span>
+                    </div>
+                    <div class="post-action">
+                        <i class="far fa-share"></i>
+                        <span>Chia sẻ</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Sidebar -->
+        <aside class="right-sidebar">
+            <div class="contacts">
+                <h3>Người liên hệ</h3>
+                <div class="contact">
+                    <img src="https://via.placeholder.com/36x36/42b883/ffffff?text=BF" alt="Friend">
+                    <span>Bạn thân HUMG</span>
+                    <div class="online-indicator"></div>
+                </div>
+                <div class="contact">
+                    <img src="https://via.placeholder.com/36x36/ff6b6b/ffffff?text=RC" alt="Friend">
+                    <span>Robot Club</span>
+                    <div class="online-indicator"></div>
+                </div>
+                <div class="contact">
+                    <img src="https://via.placeholder.com/36x36/4ecdc4/ffffff?text=TB" alt="Friend">
+                    <span>Team Badminton</span>
+                    <div class="online-indicator offline"></div>
+                </div>
+                <div class="contact">
+                    <img src="https://via.placeholder.com/36x36/f39c12/ffffff?text=AI" alt="Friend">
+                    <span>AI Study Group</span>
+                    <div class="online-indicator"></div>
+                </div>
+                <div class="contact">
+                    <img src="https://via.placeholder.com/36x36/9b59b6/ffffff?text=FB" alt="Friend">
+                    <span>Football Team</span>
+                    <div class="online-indicator offline"></div>
+                </div>
+            </div>
+            
+            <div class="birthdays">
+                <h3>Sinh nhật</h3>
+                <div class="birthday-item">
+                    <i class="fas fa-gift" style="color: #42b883;"></i>
+                    <span>Hôm nay là sinh nhật của <strong>2 người bạn</strong></span>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
