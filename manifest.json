@@ -1,0 +1,74 @@
+{
+    "name": "PhucBook - Nguyễn Công Phúc Social Network",
+    "short_name": "PhucBook",
+    "description": "Mạng xã hội của Nguyễn Công Phúc - Sinh viên HUMG chuyên ngành Robot và AI",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#1877f2",
+    "orientation": "portrait-primary",
+    "categories": ["social", "education", "technology"],
+    "lang": "vi",
+    "icons": [
+        {
+            "src": "https://via.placeholder.com/72x72/1877f2/ffffff?text=PC",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://via.placeholder.com/96x96/1877f2/ffffff?text=PC",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://via.placeholder.com/128x128/1877f2/ffffff?text=PC",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://via.placeholder.com/144x144/1877f2/ffffff?text=PC",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://via.placeholder.com/152x152/1877f2/ffffff?text=PC",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://via.placeholder.com/192x192/1877f2/ffffff?text=PC",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://via.placeholder.com/384x384/1877f2/ffffff?text=PC",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://via.placeholder.com/512x512/1877f2/ffffff?text=PC",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "https://via.placeholder.com/540x720/f0f2f5/1c1e21?text=PhucBook+Mobile+Screenshot",
+            "sizes": "540x720",
+            "type": "image/png"
+        },
+        {
+            "src": "https://via.placeholder.com/1280x800/f0f2f5/1c1e21?text=PhucBook+Desktop+Screenshot",
+            "sizes": "1280x800",
+            "type": "image/png"
+        }
+    ]
+}
