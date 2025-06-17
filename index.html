@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
 </head>
 <body>
     <div class="container">
@@ -21,6 +23,7 @@
                     <p><i class="fas fa-university"></i> Đại Học Mỏ Địa Chất</p>
                     <p><i class="fas fa-user"></i> MrPhucCong</p>
                     <p><i class="fas fa-envelope"></i> congphuc6525@gmail.com</p>
+                    <p><i class="fas fa-globe"></i> MrPhucCong.github.io</p>
                 </div>
             </div>
         </header>
@@ -32,6 +35,10 @@
                     <video id="video" autoplay muted playsinline></video>
                     <canvas id="canvas"></canvas>
                     <div id="detection-overlay"></div>
+                    <div class="camera-status" id="cameraStatus">
+                        <i class="fas fa-camera-slash"></i>
+                        <span>Camera chưa được bật</span>
+                    </div>
                 </div>
                 
                 <div class="controls">
@@ -44,25 +51,56 @@
                     <button id="uploadImage" class="btn btn-info">
                         <i class="fas fa-upload"></i> Tải Ảnh Lên
                     </button>
+                    <button id="toggleDetection" class="btn btn-warning" style="display: none;">
+                        <i class="fas fa-pause"></i> Tạm Dừng
+                    </button>
+                    <button id="stopCamera" class="btn btn-danger" style="display: none;">
+                        <i class="fas fa-stop"></i> Tắt Camera
+                    </button>
+                    <button id="resetStats" class="btn btn-secondary">
+                        <i class="fas fa-refresh"></i> Reset Thống Kê
+                    </button>
                     <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                </div>
+
+                <div class="detection-settings">
+                    <h4><i class="fas fa-cog"></i> Cài Đặt Phát Hiện</h4>
+                    <div class="setting-item">
+                        <label for="confidenceThreshold">Ngưỡng tin cậy:</label>
+                        <input type="range" id="confidenceThreshold" min="0.1" max="1" step="0.1" value="0.5">
+                        <span id="confidenceValue">50%</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="detectionSpeed">Tốc độ phát hiện:</label>
+                        <select id="detectionSpeed">
+                            <option value="fast">Nhanh (30 FPS)</option>
+                            <option value="medium" selected>Trung bình (15 FPS)</option>
+                            <option value="slow">Chậm (5 FPS)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <div class="results-section">
                 <div class="detection-results">
                     <h3><i class="fas fa-search"></i> Kết Quả Phân Tích</h3>
+                    <div class="results-header">
+                        <span class="detection-count">Phát hiện: <span id="detectionCount">0</span> vật thể</span>
+                        <span class="fps-counter">FPS: <span id="fpsCounter">0</span></span>
+                    </div>
                     <div id="results-container">
                         <div class="no-detection">
                             <i class="fas fa-eye-slash"></i>
                             <p>Chưa phát hiện rác thải nào</p>
+                            <small>Hướng camera về phía các vật thể cần phân loại</small>
                         </div>
                     </div>
                 </div>
 
                 <div class="statistics">
-                    <h3><i class="fas fa-chart-bar"></i> Thống Kê</h3>
+                    <h3><i class="fas fa-chart-bar"></i> Thống Kê Phát Hiện</h3>
                     <div class="stats-grid">
-                        <div class="stat-item">
+                        <div class="stat-item plastic-stat">
                             <div class="stat-icon plastic">
                                 <i class="fas fa-bottle-water"></i>
                             </div>
@@ -70,8 +108,9 @@
                                 <span class="stat-number" id="plastic-count">0</span>
                                 <span class="stat-label">Chai Nhựa</span>
                             </div>
+                            <div class="stat-percentage" id="plastic-percentage">0%</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item can-stat">
                             <div class="stat-icon can">
                                 <i class="fas fa-wine-bottle"></i>
                             </div>
@@ -79,8 +118,9 @@
                                 <span class="stat-number" id="can-count">0</span>
                                 <span class="stat-label">Lon Nước</span>
                             </div>
+                            <div class="stat-percentage" id="can-percentage">0%</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item bag-stat">
                             <div class="stat-icon bag">
                                 <i class="fas fa-shopping-bag"></i>
                             </div>
@@ -88,8 +128,9 @@
                                 <span class="stat-number" id="bag-count">0</span>
                                 <span class="stat-label">Túi Nilon</span>
                             </div>
+                            <div class="stat-percentage" id="bag-percentage">0%</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item glass-stat">
                             <div class="stat-icon glass">
                                 <i class="fas fa-wine-glass"></i>
                             </div>
@@ -97,6 +138,25 @@
                                 <span class="stat-number" id="glass-count">0</span>
                                 <span class="stat-label">Lọ Thủy Tinh</span>
                             </div>
+                            <div class="stat-percentage" id="glass-percentage">0%</div>
+                        </div>
+                    </div>
+                    <div class="total-stats">
+                        <div class="total-item">
+                            <strong>Tổng phát hiện: <span id="total-count">0</span></strong>
+                        </div>
+                        <div class="total-item">
+                            <strong>Độ chính xác trung bình: <span id="average-confidence">0%</span></strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detection-history">
+                    <h3><i class="fas fa-history"></i> Lịch Sử Phát Hiện</h3>
+                    <div id="history-container">
+                        <div class="no-history">
+                            <i class="fas fa-clock"></i>
+                            <p>Chưa có lịch sử phát hiện</p>
                         </div>
                     </div>
                 </div>
@@ -105,7 +165,7 @@
 
         <!-- Waste Categories Info -->
         <section class="categories-info">
-            <h2><i class="fas fa-info-circle"></i> Phân Loại Rác Thải</h2>
+            <h2><i class="fas fa-info-circle"></i> Hướng Dẫn Phân Loại Rác Thải</h2>
             <div class="categories-grid">
                 <div class="category-card plastic-bottle">
                     <div class="category-icon">
@@ -113,13 +173,19 @@
                     </div>
                     <h4>Chai Nhựa</h4>
                     <ul>
-                        <li>Chai nước lọc</li>
-                        <li>Chai nước ngọt</li>
-                        <li>Chai dầu gội</li>
-                        <li>Chai tẩy rửa</li>
+                        <li>Chai nước lọc (Aquafina, Lavie)</li>
+                        <li>Chai nước ngọt (Coca Cola, Pepsi)</li>
+                        <li>Chai dầu gội, sữa tắm</li>
+                        <li>Chai tẩy rửa, nước giặt</li>
                     </ul>
                     <div class="detection-features">
-                        <small><strong>Đặc điểm nhận diện:</strong> Hình dạng tròn, trong suốt hoặc màu sắc, có nắp</small>
+                        <strong>Đặc điểm nhận diện:</strong>
+                        <ul>
+                            <li>Hình dạng tròn, dài</li>
+                            <li>Trong suốt hoặc có màu</li>
+                            <li>Có nắp vặn</li>
+                            <li>Tỷ lệ cao/rộng > 2:1</li>
+                        </ul>
                     </div>
                 </div>
 
@@ -129,13 +195,19 @@
                     </div>
                     <h4>Lon Nhôm</h4>
                     <ul>
-                        <li>Coca Cola</li>
-                        <li>Pepsi</li>
-                        <li>Bia</li>
+                        <li>Coca Cola, Pepsi, Sprite</li>
+                        <li>Bia (Tiger, Heineken)</li>
+                        <li>Nước tăng lực (Red Bull)</li>
                         <li>Nước ngọt có gas</li>
                     </ul>
                     <div class="detection-features">
-                        <small><strong>Đặc điểm nhận diện:</strong> Bề mặt kim loại phản chiếu, hình trụ, có logo thương hiệu</small>
+                        <strong>Đặc điểm nhận diện:</strong>
+                        <ul>
+                            <li>Bề mặt kim loại phản chiếu</li>
+                            <li>Hình trụ đều</li>
+                            <li>Logo thương hiệu rõ ràng</li>
+                            <li>Tỷ lệ cao/rộng ≈ 1.5:1</li>
+                        </ul>
                     </div>
                 </div>
 
@@ -151,7 +223,13 @@
                         <li>Màng bọc thực phẩm</li>
                     </ul>
                     <div class="detection-features">
-                        <small><strong>Đặc điểm nhận diện:</strong> Mỏng, dẻo, trong suốt hoặc màu, có thể nhăn</small>
+                        <strong>Đặc điểm nhận diện:</strong>
+                        <ul>
+                            <li>Mỏng, dẻo, có thể nhăn</li>
+                            <li>Trong suốt hoặc màu</li>
+                            <li>Hình dạng không cố định</li>
+                            <li>Có thể có quai xách</li>
+                        </ul>
                     </div>
                 </div>
 
@@ -161,14 +239,55 @@
                     </div>
                     <h4>Lọ Thủy Tinh</h4>
                     <ul>
-                        <li>Lọ mứt</li>
-                        <li>Chai rượu</li>
+                        <li>Lọ mứt, tương ớt</li>
+                        <li>Chai rượu, bia</li>
                         <li>Lọ gia vị</li>
                         <li>Chai nước hoa</li>
                     </ul>
                     <div class="detection-features">
-                        <small><strong>Đặc điểm nhận diện:</strong> Trong suốt, cứng, phản chiếu ánh sáng, có độ dày</small>
+                        <strong>Đặc điểm nhận diện:</strong>
+                        <ul>
+                            <li>Trong suốt, cứng</li>
+                            <li>Phản chiếu ánh sáng</li>
+                            <li>Có độ dày rõ rệt</li>
+                            <li>Hình dạng đa dạng</li>
+                        </ul>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technology Info -->
+        <section class="technology-info">
+            <h2><i class="fas fa-brain"></i> Công Nghệ AI Sử Dụng</h2>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <div class="tech-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h4>TensorFlow.js</h4>
+                    <p>Thư viện machine learning chạy trực tiếp trên trình duyệt, cho phép phân tích realtime mà không cần server.</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h4>COCO-SSD Model</h4>
+                    <p>Mô hình nhận diện vật thể được huấn luyện trên 80+ loại đối tượng, tối ưu cho phát hiện realtime.</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <h4>Computer Vision</h4>
+                    <p>Phân tích hình ảnh, màu sắc, hình dạng để phân biệt chính xác các loại vật liệu khác nhau.</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h4>Progressive Web App</h4>
+                    <p>Ứng dụng web hiện đại, hoạt động offline, có thể cài đặt như app native trên điện thoại.</p>
                 </div>
             </div>
         </section>
@@ -177,25 +296,58 @@
         <footer class="footer">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h4>Liên Hệ</h4>
+                    <h4>Thông Tin Liên Hệ</h4>
                     <p><i class="fas fa-envelope"></i> congphuc6525@gmail.com</p>
                     <p><i class="fas fa-globe"></i> MrPhucCong.github.io</p>
+                    <p><i class="fas fa-phone"></i> Liên hệ qua email</p>
                 </div>
                 <div class="footer-section">
-                    <h4>Công Nghệ</h4>
-                    <p><i class="fas fa-brain"></i> AI Computer Vision</p>
-                    <p><i class="fas fa-camera"></i> Real-time Detection</p>
+                    <h4>Công Nghệ Sử Dụng</h4>
+                    <p><i class="fas fa-brain"></i> TensorFlow.js + COCO-SSD</p>
+                    <p><i class="fas fa-camera"></i> WebRTC Camera API</p>
+                    <p><i class="fas fa-code"></i> HTML5 Canvas + WebGL</p>
                 </div>
                 <div class="footer-section">
                     <h4>Trường Đại Học</h4>
                     <p><i class="fas fa-university"></i> Đại Học Mỏ Địa Chất</p>
                     <p><i class="fas fa-graduation-cap"></i> Khoa Công Nghệ Thông Tin</p>
+                    <p><i class="fas fa-award"></i> Đồ Án Tốt Nghiệp 2024</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Tính Năng</h4>
+                    <p><i class="fas fa-check"></i> Phát hiện realtime</p>
+                    <p><i class="fas fa-check"></i> Phân loại thông minh</p>
+                    <p><i class="fas fa-check"></i> Thống kê chi tiết</p>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 EcoSort AI - Phát triển bởi MrPhucCong</p>
+                <p>&copy; 2024 EcoSort AI - Phát triển bởi MrPhucCong | Đại Học Mỏ Địa Chất</p>
+                <div class="footer-links">
+                    <a href="#" onclick="showPrivacyPolicy()">Chính sách bảo mật</a>
+                    <a href="#" onclick="showTermsOfService()">Điều khoản sử dụng</a>
+                    <a href="#" onclick="showAbout()">Giới thiệu</a>
+                </div>
             </div>
         </footer>
+    </div>
+
+    <!-- Help Button -->
+    <button class="help-button" onclick="showShortcutsModal()">
+        <i class="fas fa-question-circle"></i>
+    </button>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <i class="fas fa-recycle"></i>
+            </div>
+            <h2>EcoSort AI</h2>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+            <p id="loadingText">Đang khởi tạo hệ thống...</p>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
