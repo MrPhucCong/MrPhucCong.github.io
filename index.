@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Waste Classification - MrPhucCong</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-recycle"></i> Smart Waste Classification AI</h1>
+                <p>Hệ thống phân loại rác thải thông minh sử dụng AI tiên tiến</p>
+                <div class="author-info">
+                    <p><i class="fas fa-user"></i> Phát triển bởi: MrPhucCong</p>
+                    <p><i class="fas fa-envelope"></i> congphuc6525@gmail.com</p>
+                    <p><i class="fas fa-university"></i> Đại học Mỏ Địa chất</p>
+                    <p><i class="fas fa-globe"></i> MrPhucCong.github.io</p>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="camera-section">
+                <div class="camera-container">
+                    <video id="video" autoplay muted playsinline></video>
+                    <canvas id="canvas"></canvas>
+                    <div id="detection-overlay"></div>
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <div class="spinner"></div>
+                        <p>Đang tải mô hình AI...</p>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="startCamera" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Bật Camera
+                    </button>
+                    <button id="captureBtn" class="btn btn-success" disabled>
+                        <i class="fas fa-camera-retro"></i> Chụp ảnh
+                    </button>
+                    <button id="uploadBtn" class="btn btn-info">
+                        <i class="fas fa-upload"></i> Tải ảnh lên
+                    </button>
+                    <button id="toggleAnalysis" class="btn btn-warning">
+                        <i class="fas fa-microscope"></i> Phân tích chi tiết
+                    </button>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                </div>
+
+                <div class="advanced-controls">
+                    <div class="sensitivity-control">
+                        <label>Độ nhạy phát hiện: <span id="sensitivityValue">70%</span></label>
+                        <input type="range" id="sensitivitySlider" min="30" max="95" value="70">
+                    </div>
+                    <div class="model-status">
+                        <span id="modelStatus" class="status-loading">Đang tải mô hình...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="detection-results">
+                    <h3><i class="fas fa-search"></i> Kết quả phân tích AI</h3>
+                    <div id="results-container">
+                        <div class="no-results">
+                            <i class="fas fa-camera"></i>
+                            <p>Bắt đầu phân tích bằng cách bật camera hoặc tải ảnh lên</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="statistics">
+                    <h3><i class="fas fa-chart-bar"></i> Thống kê phân tích</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalDetections">0</div>
+                            <div class="stat-label">Tổng phát hiện</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="plasticCount">0</div>
+                            <div class="stat-label">Chai nhựa</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="canCount">0</div>
+                            <div class="stat-label">Lon kim loại</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="bagCount">0</div>
+                            <div class="stat-label">Túi nilon</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="accuracyRate">0%</div>
+                            <div class="stat-label">Độ chính xác</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="recyclingRate">0%</div>
+                            <div class="stat-label">Tỷ lệ tái chế</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="export-section">
+                    <button id="exportResults" class="btn btn-secondary">
+                        <i class="fas fa-download"></i> Xuất báo cáo
+                    </button>
+                    <button id="clearHistory" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Xóa lịch sử
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <div class="waste-categories">
+            <h3><i class="fas fa-tags"></i> Danh mục rác thải được hỗ trợ</h3>
+            <div class="categories-grid">
+                <div class="category-item plastic-bottle">
+                    <i class="fas fa-wine-bottle"></i>
+                    <h4>Chai nhựa</h4>
+                    <p>Coca-Cola, Pepsi, Aquafina, LaVie, Dasani, Evian</p>
+                    <div class="accuracy-badge">Độ chính xác: 95%</div>
+                </div>
+                <div class="category-item aluminum-can">
+                    <i class="fas fa-prescription-bottle"></i>
+                    <h4>Lon nhôm</h4>
+                    <p>Coca-Cola, Pepsi, Sprite, Fanta, Red Bull, Monster</p>
+                    <div class="accuracy-badge">Độ chính xác: 92%</div>
+                </div>
+                <div class="category-item plastic-bag">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h4>Túi nilon</h4>
+                    <p>Túi mua sắm, túi đựng thực phẩm, bao bì nhựa</p>
+                    <div class="accuracy-badge">Độ chính xác: 88%</div>
+                </div>
+                <div class="category-item glass-bottle">
+                    <i class="fas fa-wine-glass"></i>
+                    <h4>Chai thủy tinh</h4>
+                    <p>Chai bia, chai rượu, lọ thủy tinh, chai sốt</p>
+                    <div class="accuracy-badge">Độ chính xác: 90%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="performance-monitor" id="performanceMonitor">
+            <h4><i class="fas fa-tachometer-alt"></i> Hiệu suất hệ thống</h4>
+            <div class="metric-item">
+                <span>Thời gian phân tích:</span>
+                <span id="analysisTime" class="metric-value">0ms</span>
+            </div>
+            <div class="metric-item">
+                <span>FPS Camera:</span>
+                <span id="cameraFPS" class="metric-value">0</span>
+            </div>
+            <div class="metric-item">
+                <span>Bộ nhớ sử dụng:</span>
+                <span id="memoryUsage" class="metric-value">0MB</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
+    <script src="script.js"></script>
+</body>
+</html>
