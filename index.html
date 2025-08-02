@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Phân Tích Cầu Baccarat Chuyên Sâu</title>
+    <style>
+        :root {
+            --primary-color: #1e3c72;
+            --secondary-color: #2a5298;
+            --player-color: #2196F3; /* Blue */
+            --banker-color: #f44336; /* Red */
+            --tie-color: #4CAF50; /* Green */
+            --text-light: #f8f9fa;
+            --text-dark: #333;
+            --bg-light: rgba(255, 255, 255, 0.95);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: var(--bg-light);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            text-transform: uppercase;
+        }
+        .btn-primary { background: linear-gradient(135deg, #4CAF50, #45a049); }
+        .btn-secondary { background: linear-gradient(135deg, #2196F3, #1976D2); }
+        .btn-danger { background: linear-gradient(135deg, #f44336, #d32f2f); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+        .results-container {
+            margin-top: 30px;
+        }
+        
+        .main-prediction {
+            background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .main-prediction h2 { color: var(--primary-color); margin-bottom: 15px; }
+        .prediction-value {
+            font-size: 2.2em;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 10px 0;
+            color: white;
+        }
+        .prediction-player { background-color: var(--player-color); }
+        .prediction-banker { background-color: var(--banker-color); }
+        .prediction-nobet { background-color: #ffc107; color: var(--text-dark); }
+
+        #analysisText {
+            margin-top: 15px;
+            font-size: 1.1em;
+            color: #444;
+            line-height: 1.6;
+        }
+
+        .roads-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .road-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .road-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .road-display {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 25px; /* Bead width */
+            gap: 2px;
+            min-height: 150px; /* 6 rows * 25px */
+        }
+        
+        .road-bead {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+        
+        /* Big Road Styles */
+        .bead-p { background-color: var(--player-color); }
+        .bead-b { background-color: var(--banker-color); }
+        .bead-t { background-color: var(--tie-color); }
+        .tie-slash {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: white;
+            transform: rotate(45deg);
+        }
+
+        /* Derived Roads Styles */
+        .derived-red { border: 3px solid var(--banker-color); }
+        .derived-blue { border: 3px solid var(--player-color); }
+        .derived-tie-slash {
+            position: absolute;
+            width: 80%;
+            height: 3px;
+            background-color: var(--tie-color);
+            transform: rotate(-45deg);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hệ Thống Phân Tích Cầu Baccarat Chuyên Sâu</h1>
+        
+        <div class="input-section">
+            <div class="form-group">
+                <label for="gameHistory">Nhập Lịch Sử Cầu (P=Player, B=Banker, T=Tie):</label>
+                <input type="text" id="gameHistory" placeholder="Ví dụ: PBPBBBPPPTBPBBP (nhập càng dài, phân tích càng chính xác)">
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-primary" onclick="analyzeBaccarat()">🔍 Phân Tích Cầu</button>
+                <button class="btn-secondary" onclick="generateSampleData()">🎲 Tạo Dữ Liệu Mẫu</button>
+                <button class="btn-danger" onclick="clearAll()">🗑️ Xóa Tất Cả</button>
+            </div>
+        </div>
+        
+        <div id="resultsContainer" class="results-container" style="display:none;">
+            <div class="main-prediction">
+                <h2>Gợi Ý & Diễn Giải</h2>
+                <div id="predictionOutput"></div>
+                <p id="analysisText"></p>
+            </div>
+
+            <div class="roads-grid">
+                <div class="road-card">
+                    <h3>Bảng Lớn (Big Road)</h3>
+                    <div id="bigRoad" class="road-display"></div>
+                </div>
+                <div class="road-card">
+                    <h3>Bảng Mắt Lớn (Big Eye Road)</h3>
+                    <div id="bigEyeRoad" class="road-display"></div>
+                </div>
+                <div class="road-card">
+                    <h3>Bảng Nhỏ (Small Road)</h3>
+                    <div id="smallRoad" class="road-display"></div>
+                </div>
+                <div class="road-card">
+                    <h3>Bảng Gián (Cockroach Road)</h3>
+                    <div id="cockroachRoad" class="road-display"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Parses the flat history string into a 2D matrix representing the Big Road.
+         * Handles Ties by attaching them to the previous result.
+         * @param {string} history - e.g., "PBPBBTBP"
+         * @returns {Array<Array<Object>>} - A 2D array like [[{val:'P',tie:0}],[{val:'B',tie:0}],[{val:'P',tie:0}],[{val:'B',tie:0},{val:'B',tie:1}],[{val:'P',tie:0}]]
+         */
+        function parseBigRoad(history) {
+            if (!history) return [];
+            const results = history.toUpperCase().replace(/[^PBT]/g, '').split('');
+            
+            const bigRoadMatrix = [];
+            if (results.length === 0) return bigRoadMatrix;
+
+            let currentCol = -1;
+            let lastResult = '';
+            
+            results.forEach(res => {
+                if (res === 'T') {
+                    if (currentCol >= 0 && bigRoadMatrix[currentCol].length > 0) {
+                        bigRoadMatrix[currentCol][bigRoadMatrix[currentCol].length - 1].tie++;
+                    }
+                } else {
+                    if (res !== lastResult) {
+                        currentCol++;
+                        bigRoadMatrix.push([]);
+                        lastResult = res;
+                    }
+                    bigRoadMatrix[currentCol].push({ val: res, tie: 0 });
+                }
+            });
+            return bigRoadMatrix;
+        }
+
+        /**
+         * Renders a given road matrix into the specified HTML element.
+         * @param {string} elementId - The ID of the container element.
+         * @param {Array<Array<Object>>} roadMatrix - The 2D matrix for the road.
+         * @param {string} roadType - 'big' or 'derived'.
+         */
+        function renderRoad(elementId, roadMatrix, roadType) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            if (!roadMatrix) return;
+            
+            roadMatrix.forEach(col => {
+                const colDiv = document.createElement('div');
+                col.forEach(bead => {
+                    if (!bead) return; // Skip empty spots in derived roads
+                    const beadDiv = document.createElement('div');
+                    
+                    if (roadType === 'big') {
+                        beadDiv.className = `road-bead bead-${bead.val.toLowerCase()}`;
+                        if (bead.tie > 0) {
+                            const tieText = document.createTextNode(bead.tie);
+                            beadDiv.appendChild(tieText);
+                            for (let i = 0; i < bead.tie; i++) { // Add slash for visual cue
+                                const slash = document.createElement('div');
+                                slash.className = 'tie-slash';
+                                beadDiv.appendChild(slash);
+                            }
+                        }
+                    } else { // Derived roads
+                        beadDiv.className = `road-bead derived-${bead.val.toLowerCase()}`;
+                         if (bead.tie > 0) {
+                                const slash = document.createElement('div');
+                                slash.className = 'derived-tie-slash';
+                                beadDiv.appendChild(slash);
+                            }
+                    }
+                    colDiv.appendChild(beadDiv);
+                });
+                container.appendChild(colDiv);
+            });
+        }
+        
+        /**
+         * Generates a derived road (Big Eye, Small, Cockroach).
+         * @param {Array<Array<Object>>} bigRoadMatrix - The parsed Big Road.
+         * @param {number} colOffset - 1 for Big Eye, 2 for Small, 3 for Cockroach.
+         * @returns {Array<Array<Object>>} The derived road matrix.
+         */
+        function generateDerivedRoad(bigRoadMatrix, colOffset) {
+            const derivedRoad = [];
+            if (!bigRoadMatrix || bigRoadMatrix.length <= colOffset) return derivedRoad;
+
+            let derivedCol = -1;
+            let lastDerivedResult = null;
+            
+            for (let c = colOffset; c < bigRoadMatrix.length; c++) {
+                for (let r = 0; r < bigRoadMatrix[c].length; r++) {
+                    const entry = bigRoadMatrix[c][r];
+                    if (!entry) continue;
+
+                    let isRed = false; // Red = Orderly/Predictable, Blue = Choppy/Random
+
+                    const refCol = c - colOffset;
+                    const refEntrySameRow = bigRoadMatrix[refCol][r];
+                    const refEntryPrevRow = bigRoadMatrix[refCol][r - 1];
+
+                    if (refEntrySameRow) {
+                        // Both columns have entries at this depth, it's orderly
+                        isRed = true;
+                    } else {
+                        // The reference column is shorter. Compare with the last entry of the reference column.
+                        // If they are the same length, it's orderly.
+                        if (bigRoadMatrix[c].length === bigRoadMatrix[refCol].length) {
+                           isRed = true;
+                        } else {
+                           isRed = false;
+                        }
+                    }
+                    
+                    const newDerivedResult = { val: isRed ? 'Red' : 'Blue', tie: entry.tie > 0 };
+
+                    if (derivedCol === -1 || newDerivedResult.val !== lastDerivedResult) {
+                        derivedCol++;
+                        derivedRoad.push([]);
+                        lastDerivedResult = newDerivedResult.val;
+                    }
+                    derivedRoad[derivedCol].push(newDerivedResult);
+                }
+            }
+            return derivedRoad;
+        }
+
+        /**
+         * Analyzes the last N items of a derived road to determine its trend.
+         * @param {Array<Array<Object>>} derivedRoad - The road to analyze.
+         * @param {number} lookback - How many recent results to consider.
+         * @returns {string} 'Red', 'Blue', or 'Neutral'.
+         */
+        function getRoadTrend(derivedRoad, lookback = 5) {
+            if (!derivedRoad || derivedRoad.length === 0) return 'Neutral';
+            
+            const flatRoad = derivedRoad.flat().slice(-lookback);
+            if(flatRoad.length === 0) return 'Neutral';
+
+            const redCount = flatRoad.filter(b => b.val === 'Red').length;
+            const blueCount = flatRoad.filter(b => b.val === 'Blue').length;
+
+            if (redCount / flatRoad.length >= 0.6) return 'Red'; // >60% orderly
+            if (blueCount / flatRoad.length >= 0.6) return 'Blue'; // >60% choppy
+
+            return 'Neutral';
+        }
+
+        function analyzeBaccarat() {
+            const history = document.getElementById('gameHistory').value;
+            if (history.length < 10) {
+                alert('Vui lòng nhập lịch sử có ít nhất 10 ván để phân tích chính xác.');
+                return;
+            }
+
+            document.getElementById('resultsContainer').style.display = 'block';
+
+            // 1. Parse and Render Big Road
+            const bigRoadMatrix = parseBigRoad(history);
+            renderRoad('bigRoad', bigRoadMatrix, 'big');
+            
+            // 2. Generate and Render Derived Roads
+            const bigEyeRoad = generateDerivedRoad(bigRoadMatrix, 1);
+            renderRoad('bigEyeRoad', bigEyeRoad, 'derived');
+
+            const smallRoad = generateDerivedRoad(bigRoadMatrix, 2);
+            renderRoad('smallRoad', smallRoad, 'derived');
+
+            const cockroachRoad = generateDerivedRoad(bigRoadMatrix, 3);
+            renderRoad('cockroachRoad', cockroachRoad, 'derived');
+
+            // 3. Analyze Trends and Make Prediction
+            const bigEyeTrend = getRoadTrend(bigEyeRoad);
+            const smallTrend = getRoadTrend(smallRoad);
+            const cockroachTrend = getRoadTrend(cockroachRoad);
+            
+            const trends = [bigEyeTrend, smallTrend, cockroachTrend].filter(t => t !== 'Neutral');
+            const redTrends = trends.filter(t => t === 'Red').length;
+            const blueTrends = trends.filter(t => t === 'Blue').length;
+
+            let prediction = 'NO_BET';
+            let analysis = '';
+            
+            const lastResult = history.replace(/T/g, '').slice(-1); // Last P or B
+
+            if (trends.length >= 2 && redTrends / trends.length >= 0.67) {
+                // Majority are Red (Orderly) -> Follow the trend
+                prediction = lastResult;
+                analysis = `Phần lớn các bảng cầu phụ (${redTrends}/${trends.length}) cho thấy cầu đang đi rất <strong>TRẬT TỰ (màu Đỏ)</strong>. Điều này báo hiệu xu hướng có khả năng sẽ lặp lại. Gợi ý ưu tiên theo cầu hiện tại.`;
+            } else if (trends.length >= 2 && blueTrends / trends.length >= 0.67) {
+                // Majority are Blue (Choppy) -> Bet against the trend
+                prediction = lastResult === 'P' ? 'B' : 'P';
+                analysis = `Phần lớn các bảng cầu phụ (${blueTrends}/${trends.length}) cho thấy cầu đang đi rất <strong>HỖN LOẠN (màu Xanh)</strong>. Điều này báo hiệu xu hướng có khả năng sẽ bị bẻ gãy. Gợi ý ưu tiên đánh ngược lại cầu hiện tại.`;
+            } else {
+                prediction = 'NO_BET';
+                analysis = `Các bảng cầu phụ không cho thấy tín hiệu đồng thuận rõ ràng (Đỏ: ${redTrends}, Xanh: ${blueTrends}). Cầu đang trong giai đoạn khó đoán. Tốt nhất nên chờ đợi và quan sát thêm để đảm bảo an toàn.`;
+            }
+
+            // 4. Display Final Result
+            const predictionOutput = document.getElementById('predictionOutput');
+            const analysisText = document.getElementById('analysisText');
+            
+            if (prediction === 'P') {
+                predictionOutput.innerHTML = `<div class="prediction-value prediction-player">Ưu tiên: PLAYER (CON)</div>`;
+            } else if (prediction === 'B') {
+                predictionOutput.innerHTML = `<div class="prediction-value prediction-banker">Ưu tiên: BANKER (CÁI)</div>`;
+            } else {
+                predictionOutput.innerHTML = `<div class="prediction-value prediction-nobet">⚠️ KHÔNG CƯỢC</div>`;
+            }
+            analysisText.innerHTML = analysis;
+        }
+
+        function generateSampleData() {
+            document.getElementById('gameHistory').value = 'BPBPBBPBPPBPBBPBBBBBPBBPBPBPPBPBBPBPBBPBPBBPBPPBPBPPBB';
+            analyzeBaccarat();
+        }
+
+        function clearAll() {
+            document.getElementById('gameHistory').value = '';
+            document.getElementById('resultsContainer').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
