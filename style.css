@@ -1,0 +1,234 @@
+:root {
+    --primary-color: #2c3e50; /* Midnight Blue */
+    --secondary-color: #34495e; /* Wet Asphalt */
+    --accent-color: #f1c40f; /* Sunflower */
+    --player-color: #2980b9; /* Belize Hole */
+    --banker-color: #c0392b; /* Pomegranate */
+    --tie-color: #27ae60; /* Nephritis */
+    --undo-color: #e67e22; /* Carror */
+    --text-light: #ecf0f1;
+    --text-dark: #333;
+    --bg-main: #ecf0f1; /* Clouds */
+    --bg-card: #ffffff;
+    --border-color: #bdc3c7; /* Silver */
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-dark);
+    padding: 20px;
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.main-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: var(--text-light);
+    padding: 25px;
+    border-radius: 16px 16px 0 0;
+    text-align: center;
+    box-shadow: 0 4px 15px var(--shadow-color);
+}
+.main-header h1 {
+    font-size: 2.2em;
+    margin-bottom: 5px;
+}
+.main-header p {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+.main-content {
+    background-color: #f9fafb;
+    padding: 20px;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+.card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    margin-bottom: 25px;
+}
+.card h2, .card h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1.3em;
+}
+.card-subtitle {
+    text-align:center; 
+    font-size: 0.9em; 
+    color: #666; 
+    margin-top: 15px;
+}
+
+/* Input Controls */
+.input-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+.input-controls button {
+    padding: 15px;
+    font-size: 1.2em;
+    font-weight: bold;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.input-controls button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+.btn-player { background-color: var(--player-color); }
+.btn-banker { background-color: var(--banker-color); }
+.btn-tie { background-color: var(--tie-color); }
+.btn-undo { background-color: var(--undo-color); }
+
+.history-textbox-area {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.history-textbox-area label { font-weight: 500; flex-shrink: 0; }
+#gameHistory { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 1em; }
+#btn-analyze-text { padding: 10px 15px; border: none; background-color: var(--secondary-color); color: white; border-radius: 6px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+#btn-analyze-text:hover { background-color: var(--primary-color); }
+
+/* Advanced Formula Card */
+.advanced-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+.adv-input-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: var(--text-dark);
+}
+.adv-input-group input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+/* Prediction Card */
+.prediction-card { border-left: 5px solid var(--accent-color); }
+.prediction-value { font-size: 1.8em; font-weight: bold; padding: 15px 25px; border-radius: 10px; display: block; margin: 10px 0; color: white; text-align: center; }
+.prediction-player { background-color: var(--player-color); }
+.prediction-banker { background-color: var(--banker-color); }
+.prediction-nobet { background-color: var(--accent-color); color: var(--text-dark); }
+
+.formula-result {
+    text-align: center;
+    font-style: italic;
+    color: var(--secondary-color);
+    background-color: #f0f4f8;
+    padding: 8px;
+    border-radius: 6px;
+    margin-top: 5px;
+}
+.analysis-text { margin-top: 15px; font-size: 1.1em; color: #444; line-height: 1.6; text-align: center; }
+
+/* Stats and Backtest */
+.top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+.stat-item { margin-bottom: 15px; }
+.stat-item label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: 500;}
+.progress-bar { width: 100%; height: 22px; background-color: var(--bg-main); border-radius: 11px; overflow: hidden; border: 1px solid var(--border-color); }
+.progress { height: 100%; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.85em; font-weight: bold; transition: width 0.4s ease-in-out; }
+#player-progress { background-color: var(--player-color); }
+#banker-progress { background-color: var(--banker-color); }
+#tie-progress { background-color: var(--tie-color); }
+.backtest-results { display: flex; justify-content: space-around; text-align: center; }
+.backtest-item { font-size: 1.1em; }
+.backtest-item span { display: block; font-size: 2em; font-weight: bold; }
+.backtest-correct { color: var(--tie-color); }
+.backtest-incorrect { color: var(--banker-color); }
+.backtest-nobet { color: #7f8c8d; }
+
+/* Roads */
+.main-roads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+}
+.derived-roads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+}
+.road-display {
+    min-height: 180px; 
+    padding-bottom: 10px; 
+    overflow-x: auto;
+    display: grid;
+    gap: 4px;
+}
+.bead-plate-grid {
+    grid-template-rows: repeat(6, 28px);
+    grid-auto-flow: column;
+    grid-auto-columns: 28px;
+}
+.big-road-grid, .derived-road-grid {
+    grid-auto-flow: column;
+    grid-auto-columns: 28px;
+}
+
+.road-bead {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-weight: bold;
+    color: white; position: relative; flex-shrink: 0;
+}
+.bead-p { background-color: var(--player-color); }
+.bead-b { background-color: var(--banker-color); }
+.bead-t { background-color: var(--tie-color); } /* New class for Tie bead */
+
+.tie-slash {
+    position: absolute; width: 90%; height: 3px;
+    background: #f1c40f; transform: rotate(45deg);
+    border-radius: 2px;
+}
+.derived-red { border: 3px solid var(--banker-color); }
+.derived-blue { border: 3px solid var(--player-color); }
+.road-stats {
+    text-align: center; margin-top: 15px; padding-top: 15px;
+    border-top: 1px solid var(--border-color); font-weight: 500;
+}
+.road-stats .red-stat { color: var(--banker-color); }
+.road-stats .blue-stat { color: var(--player-color); }
+
+@media (max-width: 1200px) {
+    .derived-roads-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) { 
+    .top-grid { grid-template-columns: 1fr; }
+    .main-roads-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) { .history-textbox-area { flex-direction: column; align-items: stretch; } }
