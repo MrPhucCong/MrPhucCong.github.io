@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống AI Baccarat Pro v3.0 - Intelligent Analyst</title>
+    <style>
+        :root {
+            --player-color: #667eea;
+            --banker-color: #f5576c;
+            --tie-color: #4facfe;
+            --pair-color: #43e97b;
+            --action-color: #fa709a;
+            --danger-color: #ff4444;
+            --gold-color: #FFD700;
+            --light-text: #fff;
+            --dark-text: #333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #232526 0%, #414345 100%);
+            color: var(--light-text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, var(--gold-color), #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, var(--player-color), var(--banker-color));
+            padding: 5px 15px; border-radius: 20px; font-size: 0.9em; margin-bottom: 10px;
+        }
+
+        .disclaimer {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 10px; border-radius: 8px; margin-bottom: 20px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 968px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+
+        button {
+            padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer;
+            font-weight: bold; transition: all 0.3s; text-transform: uppercase;
+        }
+        button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .btn-player { background: var(--player-color); color: var(--light-text); }
+        .btn-banker { background: var(--banker-color); color: var(--light-text); }
+        .btn-tie { background: var(--tie-color); color: var(--light-text); }
+        .btn-action { background: var(--action-color); color: var(--dark-text); }
+        .btn-danger { background: var(--danger-color); color: var(--light-text); }
+
+        .prediction-panel.recommended-P { border-left: 5px solid var(--player-color); }
+        .prediction-panel.recommended-B { border-left: 5px solid var(--banker-color); }
+        .prediction-panel.recommended-T { border-left: 5px solid var(--tie-color); }
+
+        .prediction-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; margin-bottom: 10px; border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+        }
+        .prediction-label { font-size: 1.2em; font-weight: bold; }
+        .prediction-percentage { font-size: 1.5em; font-weight: bold; }
+        .confidence-meter { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; overflow: hidden; margin-top: 5px; }
+        .confidence-fill { height: 100%; transition: width 0.5s ease; }
+        #playerConf { background: var(--player-color); }
+        #bankerConf { background: var(--banker-color); }
+        #tieConf { background: var(--tie-color); }
+
+        #predictionReason {
+            margin-top: 15px; padding: 15px;
+            background: rgba(0,0,0,0.2); border-radius: 8px;
+            border-left: 3px solid var(--gold-color);
+        }
+        
+        .stat-box {
+            display: flex; justify-content: space-between; padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-label { color: rgba(255,255,255,0.7); }
+        .stat-value { font-weight: bold; }
+        
+        .history-display {
+            display: flex; flex-wrap: wrap; gap: 5px; max-height: 120px;
+            overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2);
+            border-radius: 8px; margin-top: 10px;
+        }
+        .history-item { padding: 5px 10px; border-radius: 50px; font-size: 0.9em; }
+        .history-item.P { background: var(--player-color); }
+        .history-item.B { background: var(--banker-color); }
+        .history-item.T { background: var(--tie-color); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="version-badge">v3.0 - Intelligent Analyst</div>
+            <h1>🧠 AI Baccarat Pro</h1>
+            <div class="disclaimer">
+                ⚠️ Công cụ phân tích thống kê nâng cao. Kết quả dựa trên dữ liệu quá khứ và không đảm bảo chính xác 100%. Hãy chơi có trách nhiệm.
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="sidebar">
+                <div class="card">
+                    <h2>🎮 Bảng Điều Khiển</h2>
+                    <div class="input-controls">
+                        <button class="btn-player" onclick="ai.addResult('P')">👤 Con</button>
+                        <button class="btn-banker" onclick="ai.addResult('B')">🏦 Cái</button>
+                    </div>
+                    <div class="input-controls" style="grid-template-columns: 1fr;">
+                        <button class="btn-tie" onclick="ai.addResult('T')">🤝 Hòa</button>
+                    </div>
+                    <div class="input-controls">
+                        <button class="btn-action" onclick="ai.undoLast()">↩️ Hoàn Tác</button>
+                        <button class="btn-danger" onclick="ai.reset()">💣 Reset</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>📊 Thống Kê Phiên</h2>
+                    <div class="stat-box">
+                        <span class="stat-label">Tổng Ván</span>
+                        <span class="stat-value" id="totalGames">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Con</span>
+                        <span class="stat-value" id="playerCount">0 (0%)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Cái</span>
+                        <span class="stat-value" id="bankerCount">0 (0%)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Hòa</span>
+                        <span class="stat-value" id="tieCount">0 (0%)</span>
+                    </div>
+                     <div class="stat-box">
+                        <span class="stat-label">Chuỗi Hiện Tại</span>
+                        <span class="stat-value" id="currentStreak">N/A</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="card prediction-panel" id="predictionPanel">
+                    <h2>🔮 Phân Tích & Dự Đoán</h2>
+                    <div class="prediction-grid">
+                        <div class="prediction-item">
+                            <div>
+                                <div class="prediction-label">CON</div>
+                            </div>
+                            <div class="prediction-percentage" id="playerProb">0%</div>
+                        </div>
+                        <div class="confidence-meter"><div class="confidence-fill" id="playerConf" style="width: 0%"></div></div>
+
+                        <div class="prediction-item">
+                             <div>
+                                <div class="prediction-label">CÁI</div>
+                            </div>
+                            <div class="prediction-percentage" id="bankerProb">0%</div>
+                        </div>
+                        <div class="confidence-meter"><div class="confidence-fill" id="bankerConf" style="width: 0%"></div></div>
+
+                        <div class="prediction-item">
+                            <div>
+                                <div class="prediction-label">HÒA</div>
+                            </div>
+                            <div class="prediction-percentage" id="tieProb">0%</div>
+                        </div>
+                         <div class="confidence-meter"><div class="confidence-fill" id="tieConf" style="width: 0%"></div></div>
+                    </div>
+                    
+                    <div id="predictionReason">
+                        Chờ nhập dữ liệu để bắt đầu phân tích...
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <h2>📜 Lịch Sử Ván</h2>
+                    <div class="history-display" id="historyDisplay"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+class BaccaratAI {
+    constructor() {
+        this.history = [];
+        this.stats = { P: 0, B: 0, T: 0, total: 0 };
+        this.maxPatternLength = 5; // AI sẽ tìm mẫu có độ dài tối đa là 5
+        this.minPatternSamples = 2; // Cần ít nhất 2 mẫu để một dự đoán được coi là đáng tin
+    }
+
+    // Thêm kết quả mới và kích hoạt phân tích
+    addResult(result) {
+        if (!['P', 'B', 'T'].includes(result)) return;
+        this.history.push(result);
+        this.updateStats();
+        this.analyze();
+    }
+
+    // Hoàn tác hành động cuối
+    undoLast() {
+        if (this.history.length === 0) return;
+        this.history.pop();
+        this.updateStats();
+        this.analyze();
+    }
+    
+    // Reset toàn bộ phiên
+    reset() {
+        if (confirm("Bạn có chắc muốn xóa toàn bộ lịch sử và thống kê của phiên này?")) {
+            this.history = [];
+            this.stats = { P: 0, B: 0, T: 0, total: 0 };
+            this.analyze();
+        }
+    }
+
+    // Cập nhật các số liệu thống kê cơ bản
+    updateStats() {
+        this.stats = { P: 0, B: 0, T: 0, total: this.history.length };
+        this.history.forEach(res => {
+            if (this.stats[res] !== undefined) {
+                this.stats[res]++;
+            }
+        });
+        this.updateDOM();
+    }
+
+    // Hàm phân tích chính
+    analyze() {
+        if (this.history.length < this.minPatternSamples) {
+            this.displayPrediction({ reason: "Cần thêm dữ liệu (ít nhất " + this.minPatternSamples + " ván) để bắt đầu phân tích."});
+            return;
+        }
+        
+        const prediction = this.findBestPattern();
+        this.displayPrediction(prediction);
+    }
+    
+    // Thuật toán cốt lõi: tìm mẫu tốt nhất
+    findBestPattern() {
+        // Lặp từ mẫu dài nhất đến ngắn nhất
+        for (let len = this.maxPatternLength; len >= 1; len--) {
+            if (this.history.length < len) continue;
+
+            const currentPattern = this.history.slice(-len);
+            const occurrences = { P: 0, B: 0, T: 0, total: 0 };
+            
+            // Quét toàn bộ lịch sử để tìm mẫu
+            for (let i = 0; i <= this.history.length - len - 1; i++) {
+                const historicalPattern = this.history.slice(i, i + len);
+                
+                // So sánh mảng
+                if (JSON.stringify(historicalPattern) === JSON.stringify(currentPattern)) {
+                    const nextResult = this.history[i + len];
+                    occurrences[nextResult]++;
+                    occurrences.total++;
+                }
+            }
+
+            // Nếu tìm thấy đủ số lượng mẫu, sử dụng nó để dự đoán
+            if (occurrences.total >= this.minPatternSamples) {
+                return this.calculatePrediction(occurrences, currentPattern);
+            }
+        }
+        
+        // Nếu không tìm thấy mẫu nào đủ tốt, trả về dự đoán dựa trên thống kê chung
+        return this.calculatePrediction(
+            { ...this.stats, total: this.stats.total }, 
+            null, 
+            "Không tìm thấy mẫu nào đáng tin cậy. Dựa trên thống kê chung:"
+        );
+    }
+
+    // Tính toán xác suất và độ tự tin
+    calculatePrediction(occurrences, pattern, customReason = null) {
+        const pProb = occurrences.P / occurrences.total;
+        const bProb = occurrences.B / occurrences.total;
+        const tProb = occurrences.T / occurrences.total;
+
+        const pConf = this.calculateConfidence(pProb, occurrences.total);
+        const bConf = this.calculateConfidence(bProb, occurrences.total);
+        const tConf = this.calculateConfidence(tProb, occurrences.total);
+        
+        let reason;
+        if (customReason) {
+            reason = customReason;
+        } else if (pattern) {
+            reason = `Phân tích dựa trên mẫu [${pattern.join(', ')}] xuất hiện ${occurrences.total} lần trong lịch sử.`;
+        } else {
+             reason = "Bắt đầu phân tích...";
+        }
+
+        return {
+            P: { prob: pProb * 100, conf: pConf },
+            B: { prob: bProb * 100, conf: bConf },
+            T: { prob: tProb * 100, conf: tConf },
+            reason: reason,
+        };
+    }
+    
+    // Công thức tính điểm tự tin mới
+    calculateConfidence(probability, sampleSize) {
+        // Công thức: Probability * log(SampleSize + 1)
+        // Dùng log cơ số 2 để khuếch đại sự khác biệt ở mẫu nhỏ
+        // Chuẩn hóa về thang điểm 100
+        if (sampleSize === 0) return 0;
+        return probability * (Math.log2(sampleSize + 1) / Math.log2(this.history.length + 1)) * 100;
+    }
+    
+    // Phân tích chuỗi thắng
+    getStreak() {
+        if (this.history.length === 0) return "N/A";
+        let streakCount = 0;
+        let streakType = this.history[this.history.length - 1];
+        for (let i = this.history.length - 1; i >= 0; i--) {
+            if (this.history[i] === streakType) {
+                streakCount++;
+            } else {
+                break;
+            }
+        }
+        return `${streakType} x ${streakCount}`;
+    }
+
+    // Hiển thị kết quả lên giao diện
+    displayPrediction(prediction) {
+        const { P, B, T, reason } = prediction;
+        
+        if (P) {
+            document.getElementById('playerProb').textContent = `${P.prob.toFixed(1)}%`;
+            document.getElementById('playerConf').style.width = `${P.conf.toFixed(2)}%`;
+            document.getElementById('bankerProb').textContent = `${B.prob.toFixed(1)}%`;
+            document.getElementById('bankerConf').style.width = `${B.conf.toFixed(2)}%`;
+            document.getElementById('tieProb').textContent = `${T.prob.toFixed(1)}%`;
+            document.getElementById('tieConf').style.width = `${T.conf.toFixed(2)}%`;
+
+            // Làm nổi bật dự đoán cao nhất
+            const panel = document.getElementById('predictionPanel');
+            panel.classList.remove('recommended-P', 'recommended-B', 'recommended-T');
+            if (P.prob > B.prob && P.prob > T.prob) panel.classList.add('recommended-P');
+            else if (B.prob > P.prob && B.prob > T.prob) panel.classList.add('recommended-B');
+            else if (T.prob > P.prob && T.prob > B.prob) panel.classList.add('recommended-T');
+
+        } else {
+            // Reset nếu không có dữ liệu
+            ['player', 'banker', 'tie'].forEach(el => {
+                document.getElementById(`${el}Prob`).textContent = '0%';
+                document.getElementById(`${el}Conf`).style.width = '0%';
+            });
+        }
+
+        document.getElementById('predictionReason').textContent = reason || '';
+    }
+    
+    updateDOM() {
+        // Stats
+        document.getElementById('totalGames').textContent = this.stats.total;
+        document.getElementById('playerCount').textContent = `${this.stats.P} (${(this.stats.total > 0 ? (this.stats.P / this.stats.total * 100) : 0).toFixed(1)}%)`;
+        document.getElementById('bankerCount').textContent = `${this.stats.B} (${(this.stats.total > 0 ? (this.stats.B / this.stats.total * 100) : 0).toFixed(1)}%)`;
+        document.getElementById('tieCount').textContent = `${this.stats.T} (${(this.stats.total > 0 ? (this.stats.T / this.stats.total * 100) : 0).toFixed(1)}%)`;
+        document.getElementById('currentStreak').textContent = this.getStreak();
+
+        // History
+        const historyContainer = document.getElementById('historyDisplay');
+        historyContainer.innerHTML = '';
+        this.history.forEach(res => {
+            const item = document.createElement('div');
+            item.className = `history-item ${res}`;
+            item.textContent = res;
+            historyContainer.appendChild(item);
+        });
+        historyContainer.scrollTop = historyContainer.scrollHeight;
+    }
+}
+
+// Khởi tạo AI
+const ai = new BaccaratAI();
+
+</script>
+</body>
+</html>
