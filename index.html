@@ -1,0 +1,4367 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Phân Tích Baccarat Pro - mrphuccong.github.io</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .disclaimer {
+            text-align: center;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .input-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-player {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-banker {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-tie {
+            background: linear-gradient(45deg, #28a745, #218838);
+            color: white;
+        }
+
+        .btn-pair {
+            background: linear-gradient(45deg, #43e97b, #38f9d7);
+            color: white;
+        }
+
+        .btn-action {
+            background: linear-gradient(45deg, #fa709a, #fee140);
+            color: #333;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-title {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .stat-value.player-color {
+            color: #007bff;
+        }
+
+        .stat-value.banker-color {
+            color: #dc3545;
+        }
+
+        .stat-value.tie-color {
+            color: #28a745;
+        }
+
+        .prediction-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .prediction-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .prediction-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .prediction-card.player-card {
+            background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 86, 179, 0.1));
+        }
+
+        .prediction-card.banker-card {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(200, 35, 51, 0.1));
+        }
+
+        .prediction-card.tie-card {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(33, 136, 56, 0.1));
+        }
+
+        .prediction-card.recommended {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .confidence-fill.player-bar {
+            background: linear-gradient(90deg, #007bff, #0056b3);
+        }
+
+        .confidence-fill.banker-bar {
+            background: linear-gradient(90deg, #dc3545, #c82333);
+        }
+
+        .confidence-fill.tie-bar {
+            background: linear-gradient(90deg, #28a745, #218838);
+        }
+
+        /* Phần mới cho hệ thống phân tích xu hướng độc lập */
+        .trend-analysis-section {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.1));
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .trend-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .trend-header h2 {
+            color: #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .trend-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .trend-cases {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .trend-case {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .case-header {
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .case-description {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+        .case-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .case-stat {
+            text-align: center;
+            padding: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .case-stat.player-stat {
+            border: 1px solid #007bff;
+            color: #4da3ff;
+        }
+
+        .case-stat.banker-stat {
+            border: 1px solid #dc3545;
+            color: #ff6b7d;
+        }
+
+        .case-stat.tie-stat {
+            border: 1px solid #28a745;
+            color: #5dd879;
+        }
+
+        .case-stat.highest-rate {
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            border-width: 2px;
+        }
+
+        .case-stat.lowest-rate {
+            opacity: 0.6;
+        }
+
+        .win-rate {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .rate-label {
+            font-size: 0.75em;
+            color: #aaa;
+            margin-top: 3px;
+        }
+
+        .rate-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ffd700;
+            color: #333;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+
+        .trend-summary {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .summary-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .summary-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .summary-actual {
+            font-size: 0.9em;
+            color: #ffd700;
+            margin-top: 5px;
+        }
+
+        .prediction-accuracy {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05));
+            border-radius: 8px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .accuracy-title {
+            font-size: 0.9em;
+            color: #ffd700;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .accuracy-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .accuracy-item {
+            text-align: center;
+            padding: 6px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .accuracy-label {
+            font-size: 0.75em;
+            color: #aaa;
+        }
+
+        .accuracy-percent {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .accuracy-percent.good {
+            color: #28a745;
+        }
+
+        .accuracy-percent.medium {
+            color: #ffc107;
+        }
+
+        .accuracy-percent.bad {
+            color: #dc3545;
+        }
+
+        .trend-recommendation {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 215, 0, 0.1));
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #ffd700;
+        }
+
+        .recommendation-stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .recommendation-stats-title {
+            font-size: 1em;
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .recommendation-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .rec-stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rec-stat-header {
+            font-size: 0.85em;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .rec-stat-content {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .rec-stat-item {
+            text-align: center;
+            padding: 5px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .rec-stat-label {
+            font-size: 0.7em;
+            color: #888;
+        }
+
+        .rec-stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .rec-stat-value.correct {
+            color: #28a745;
+        }
+
+        .rec-stat-value.wrong {
+            color: #dc3545;
+        }
+
+        .rec-stat-value.rate {
+            color: #ffd700;
+        }
+
+        .recommendation-title {
+            font-size: 1.2em;
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .recommendation-content {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .rec-option {
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .rec-option.player-rec {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .rec-option.banker-rec {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .rec-option.tie-rec {
+            background: linear-gradient(135deg, #28a745, #218838);
+            color: white;
+        }
+
+        .rec-option.highlighted {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+        }
+
+        .trend-statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .trend-stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .trend-stat-label {
+            font-size: 0.85em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .trend-stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .roadmap-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .roadmap {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+            gap: 2px;
+            margin-bottom: 15px;
+        }
+
+        .road-cell {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .road-cell.player {
+            background: #007bff;
+        }
+
+        .road-cell.banker {
+            background: #dc3545;
+        }
+
+        .road-cell.tie {
+            background: #28a745;
+        }
+
+        .pattern-analysis {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .pattern-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .advanced-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        #historyDisplay {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            min-height: 50px;
+        }
+
+        .history-item {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .history-item.player-history {
+            background: #007bff;
+            color: white;
+        }
+
+        .history-item.banker-history {
+            background: #dc3545;
+            color: white;
+        }
+
+        .history-item.tie-history {
+            background: #28a745;
+            color: white;
+        }
+
+        .pattern-detection-section {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), rgba(52, 152, 219, 0.1));
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(155, 89, 182, 0.3);
+        }
+
+        .pattern-detection-header {
+            color: #9b59b6;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .pattern-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .pattern-card.active {
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .pattern-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pattern-icon {
+            font-size: 1.5em;
+        }
+
+        .pattern-status {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pattern-confidence {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .pattern-prediction {
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .pattern-prediction.player {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .pattern-prediction.banker {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .pattern-item-detected {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pattern-alert {
+            background: linear-gradient(135deg, rgba(255, 87, 34, 0.2), rgba(255, 193, 7, 0.2));
+            border: 2px solid rgba(255, 193, 7, 0.6);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            animation: patternPulse 1.5s infinite;
+        }
+
+        @keyframes patternPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .pattern-alert-title {
+            color: #ffc107;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .pattern-description {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .pattern-strength-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .pattern-strength-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffd700);
+            transition: width 0.5s ease;
+        }
+
+        .advanced-analytics {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(33, 150, 243, 0.1));
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .analytics-header {
+            color: #4ecdc4;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .analytics-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .analytics-card-title {
+            color: #4ecdc4;
+            font-size: 0.95em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .analytics-content {
+            display: grid;
+            gap: 8px;
+        }
+
+        .analytics-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 4px;
+        }
+
+        .analytics-label {
+            color: #aaa;
+            font-size: 0.85em;
+        }
+
+        .analytics-value {
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .hot-number {
+            color: #ff6b6b !important;
+        }
+
+        .cold-number {
+            color: #4da3ff !important;
+        }
+
+        .kelly-bet {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2));
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .kelly-amount {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .risk-indicator {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .risk-low {
+            background: #28a745;
+            color: white;
+        }
+
+        .risk-medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .risk-high {
+            background: #dc3545;
+            color: white;
+        }
+
+        .algorithm-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .algorithm-info h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+
+        .algorithm-list {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .algorithm-list li {
+            margin: 5px 0;
+            position: relative;
+        }
+
+        .algorithm-list li:before {
+            content: "✓";
+            position: absolute;
+            left: -20px;
+            color: #4ecdc4;
+        }
+
+        .pattern-report {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pattern-item-detected {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .algorithm-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            margin-left: 5px;
+        }
+
+        .algorithm-badge.HOT {
+            background: linear-gradient(135deg, #ff6b6b, #ff8787);
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎰 Hệ Thống Phân Tích Baccarat Pro</h1>
+        <p class="disclaimer">⚠️ Lưu ý: Đây chỉ là công cụ phân tích thống kê. Kết quả Baccarat là ngẫu nhiên và không thể dự đoán chính xác 100%</p>
+
+        <div class="input-section">
+            <h2>📊 Nhập Kết Quả</h2>
+            <div class="input-controls">
+                <button class="btn-player" onclick="addResult('P')">👤 CON (Player)</button>
+                <button class="btn-banker" onclick="addResult('B')">🏦 CÁI (Banker)</button>
+                <button class="btn-tie" onclick="addResult('T')">🤝 HÒA (Tie)</button>
+                <button class="btn-pair" onclick="addResult('PP')">👥 Đôi Con</button>
+                <button class="btn-pair" onclick="addResult('BP')">👥 Đôi Cái</button>
+                <button class="btn-action" onclick="clearHistory()">🗑️ Xóa Tất Cả</button>
+                <button class="btn-action" onclick="undoLast()">↩️ Hoàn Tác</button>
+                <button class="btn-action" onclick="generateRandom()">🎲 Ngẫu Nhiên (Demo)</button>
+            </div>
+            <div id="historyDisplay"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Tổng Ván</div>
+                <div class="stat-value" id="totalGames">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Tỷ Lệ Con</div>
+                <div class="stat-value player-color" id="playerRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Tỷ Lệ Cái</div>
+                <div class="stat-value banker-color" id="bankerRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Tỷ Lệ Hòa</div>
+                <div class="stat-value tie-color" id="tieRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Chuỗi Hiện Tại</div>
+                <div class="stat-value" id="currentStreak">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Chu Kỳ Phát Hiện</div>
+                <div class="stat-value" id="cycleDetected">-</div>
+            </div>
+        </div>
+
+        <div class="prediction-section">
+            <h2>🔮 Dự Đoán Ván Tiếp Theo (Hệ Thống AI)</h2>
+            <div class="prediction-grid">
+                <div class="prediction-card player-card" id="predPlayer">
+                    <h3 style="color: #007bff;">CON</h3>
+                    <div class="stat-value" id="playerProb">0%</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill player-bar" id="playerConfBar"></div>
+                    </div>
+                </div>
+                <div class="prediction-card banker-card" id="predBanker">
+                    <h3 style="color: #dc3545;">CÁI</h3>
+                    <div class="stat-value" id="bankerProb">0%</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill banker-bar" id="bankerConfBar"></div>
+                    </div>
+                </div>
+                <div class="prediction-card tie-card" id="predTie">
+                    <h3 style="color: #28a745;">HÒA</h3>
+                    <div class="stat-value" id="tieProb">0%</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill tie-bar" id="tieConfBar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HỆ THỐNG PHÂN TÍCH XU HƯỚNG ĐỘC LẬP MỚI -->
+        <div class="trend-analysis-section">
+            <div class="trend-header">
+                <h2>⚡ HỆ THỐNG PHÂN TÍCH XU HƯỚNG ĐỘC LẬP</h2>
+                <div class="trend-status" id="trendStatus" style="background: linear-gradient(135deg, #28a745, #218838);">
+                    Đang Phân Tích...
+                </div>
+            </div>
+
+            <div class="trend-cases">
+                <!-- Trường Hợp 1 -->
+                <div class="trend-case">
+                    <div class="case-header">
+                        📊 Trường Hợp 1: Cao > Trung > Thấp
+                    </div>
+                    <div class="case-description">
+                        Khi tỉ lệ: Lớn nhất > Hòa (giữa) > Nhỏ nhất
+                    </div>
+                    <div class="case-stats" id="case1Stats">
+                        <div class="case-stat player-stat" id="case1PlayerStat">
+                            <div>Con về</div>
+                            <div id="case1Player">0/0</div>
+                            <div class="win-rate" id="case1PlayerRate">0%</div>
+                        </div>
+                        <div class="case-stat banker-stat" id="case1BankerStat">
+                            <div>Cái về</div>
+                            <div id="case1Banker">0/0</div>
+                            <div class="win-rate" id="case1BankerRate">0%</div>
+                        </div>
+                        <div class="case-stat tie-stat" id="case1TieStat">
+                            <div>Hòa về</div>
+                            <div id="case1Tie">0/0</div>
+                            <div class="win-rate" id="case1TieRate">0%</div>
+                        </div>
+                    </div>
+                    <div class="trend-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">Cao nhất</div>
+                            <div class="summary-value" id="case1Highest">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Trung bình</div>
+                            <div class="summary-value" id="case1Middle">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Thấp nhất</div>
+                            <div class="summary-value" id="case1Lowest">-</div>
+                        </div>
+                    </div>
+                    <div class="prediction-accuracy">
+                        <div class="accuracy-title">📈 Phân tích độ chính xác dự đoán</div>
+                        <div class="accuracy-grid">
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán CAO nhất</div>
+                                <div class="accuracy-percent" id="case1HighAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán GIỮA</div>
+                                <div class="accuracy-percent" id="case1MidAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán THẤP nhất</div>
+                                <div class="accuracy-percent" id="case1LowAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trường Hợp 2 -->
+                <div class="trend-case">
+                    <div class="case-header">
+                        🎯 Trường Hợp 2: Hòa Lớn Nhất
+                    </div>
+                    <div class="case-description">
+                        Khi tỉ lệ Hòa dự đoán cao nhất
+                    </div>
+                    <div class="case-stats" id="case2Stats">
+                        <div class="case-stat player-stat" id="case2PlayerStat">
+                            <div>Con về</div>
+                            <div id="case2Player">0/0</div>
+                            <div class="win-rate" id="case2PlayerRate">0%</div>
+                        </div>
+                        <div class="case-stat banker-stat" id="case2BankerStat">
+                            <div>Cái về</div>
+                            <div id="case2Banker">0/0</div>
+                            <div class="win-rate" id="case2BankerRate">0%</div>
+                        </div>
+                        <div class="case-stat tie-stat" id="case2TieStat">
+                            <div>Hòa về</div>
+                            <div id="case2Tie">0/0</div>
+                            <div class="win-rate" id="case2TieRate">0%</div>
+                        </div>
+                    </div>
+                    <div class="trend-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">Cao nhất</div>
+                            <div class="summary-value" id="case2Highest">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Trung bình</div>
+                            <div class="summary-value" id="case2Middle">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Thấp nhất</div>
+                            <div class="summary-value" id="case2Lowest">-</div>
+                        </div>
+                    </div>
+                    <div class="prediction-accuracy">
+                        <div class="accuracy-title">📈 Phân tích độ chính xác dự đoán</div>
+                        <div class="accuracy-grid">
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán CAO nhất</div>
+                                <div class="accuracy-percent" id="case2HighAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán GIỮA</div>
+                                <div class="accuracy-percent" id="case2MidAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán THẤP nhất</div>
+                                <div class="accuracy-percent" id="case2LowAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trường Hợp 3 -->
+                <div class="trend-case">
+                    <div class="case-header">
+                        🔄 Trường Hợp 3: Hòa Nhỏ Nhất
+                    </div>
+                    <div class="case-description">
+                        Khi tỉ lệ Hòa dự đoán thấp nhất
+                    </div>
+                    <div class="case-stats" id="case3Stats">
+                        <div class="case-stat player-stat" id="case3PlayerStat">
+                            <div>Con về</div>
+                            <div id="case3Player">0/0</div>
+                            <div class="win-rate" id="case3PlayerRate">0%</div>
+                        </div>
+                        <div class="case-stat banker-stat" id="case3BankerStat">
+                            <div>Cái về</div>
+                            <div id="case3Banker">0/0</div>
+                            <div class="win-rate" id="case3BankerRate">0%</div>
+                        </div>
+                        <div class="case-stat tie-stat" id="case3TieStat">
+                            <div>Hòa về</div>
+                            <div id="case3Tie">0/0</div>
+                            <div class="win-rate" id="case3TieRate">0%</div>
+                        </div>
+                    </div>
+                    <div class="trend-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">Cao nhất</div>
+                            <div class="summary-value" id="case3Highest">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Trung bình</div>
+                            <div class="summary-value" id="case3Middle">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Thấp nhất</div>
+                            <div class="summary-value" id="case3Lowest">-</div>
+                        </div>
+                    </div>
+                    <div class="prediction-accuracy">
+                        <div class="accuracy-title">📈 Phân tích độ chính xác dự đoán</div>
+                        <div class="accuracy-grid">
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán CAO nhất</div>
+                                <div class="accuracy-percent" id="case3HighAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán GIỮA</div>
+                                <div class="accuracy-percent" id="case3MidAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán THẤP nhất</div>
+                                <div class="accuracy-percent" id="case3LowAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trường Hợp 4 -->
+                <div class="trend-case">
+                    <div class="case-header">
+                        ⚖️ Trường Hợp 4: Tỉ Lệ Cân Bằng
+                    </div>
+                    <div class="case-description">
+                        Khi các tỉ lệ gần bằng nhau (chênh &lt; 5%)
+                    </div>
+                    <div class="case-stats" id="case4Stats">
+                        <div class="case-stat player-stat" id="case4PlayerStat">
+                            <div>Con về</div>
+                            <div id="case4Player">0/0</div>
+                            <div class="win-rate" id="case4PlayerRate">0%</div>
+                        </div>
+                        <div class="case-stat banker-stat" id="case4BankerStat">
+                            <div>Cái về</div>
+                            <div id="case4Banker">0/0</div>
+                            <div class="win-rate" id="case4BankerRate">0%</div>
+                        </div>
+                        <div class="case-stat tie-stat" id="case4TieStat">
+                            <div>Hòa về</div>
+                            <div id="case4Tie">0/0</div>
+                            <div class="win-rate" id="case4TieRate">0%</div>
+                        </div>
+                    </div>
+                    <div class="trend-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">Cao nhất</div>
+                            <div class="summary-value" id="case4Highest">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Trung bình</div>
+                            <div class="summary-value" id="case4Middle">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Thấp nhất</div>
+                            <div class="summary-value" id="case4Lowest">-</div>
+                        </div>
+                    </div>
+                    <div class="prediction-accuracy">
+                        <div class="accuracy-title">📈 Phân tích độ chính xác dự đoán</div>
+                        <div class="accuracy-grid">
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán CAO nhất</div>
+                                <div class="accuracy-percent" id="case4HighAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán GIỮA</div>
+                                <div class="accuracy-percent" id="case4MidAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                            <div class="accuracy-item">
+                                <div class="accuracy-label">Khi dự đoán THẤP nhất</div>
+                                <div class="accuracy-percent" id="case4LowAccuracy">--%</div>
+                                <div style="font-size: 0.7em; color: #888;">Thực tế về</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trend-recommendation">
+                <div class="recommendation-title">
+                    💡 ĐỀ XUẤT DỰA TRÊN PHÂN TÍCH XU HƯỚNG
+                </div>
+                <div class="recommendation-content" id="trendRecommendation">
+                    <div style="color: #ccc;">Đang thu thập dữ liệu...</div>
+                </div>
+                <div style="margin-top: 15px; font-size: 0.9em; color: #aaa;">
+                    Độ chính xác: <span id="trendAccuracy" style="font-weight: bold; color: #ffd700;">--%</span>
+                </div>
+            </div>
+
+            <div class="recommendation-stats">
+                <div class="recommendation-stats-title">
+                    📊 THỐNG KÊ ĐỘ CHÍNH XÁC ĐỀ XUẤT THEO TRƯỜNG HỢP
+                </div>
+                <div class="recommendation-stats-grid">
+                    <div class="rec-stat-card">
+                        <div class="rec-stat-header">Trường hợp 1: Cao > Trung > Thấp</div>
+                        <div class="rec-stat-content">
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Đúng</div>
+                                <div class="rec-stat-value correct" id="case1RecCorrect">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Sai</div>
+                                <div class="rec-stat-value wrong" id="case1RecWrong">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Tỉ lệ</div>
+                                <div class="rec-stat-value rate" id="case1RecRate">--%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rec-stat-card">
+                        <div class="rec-stat-header">Trường hợp 2: Hòa Lớn Nhất</div>
+                        <div class="rec-stat-content">
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Đúng</div>
+                                <div class="rec-stat-value correct" id="case2RecCorrect">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Sai</div>
+                                <div class="rec-stat-value wrong" id="case2RecWrong">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Tỉ lệ</div>
+                                <div class="rec-stat-value rate" id="case2RecRate">--%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rec-stat-card">
+                        <div class="rec-stat-header">Trường hợp 3: Hòa Nhỏ Nhất</div>
+                        <div class="rec-stat-content">
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Đúng</div>
+                                <div class="rec-stat-value correct" id="case3RecCorrect">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Sai</div>
+                                <div class="rec-stat-value wrong" id="case3RecWrong">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Tỉ lệ</div>
+                                <div class="rec-stat-value rate" id="case3RecRate">--%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rec-stat-card">
+                        <div class="rec-stat-header">Trường hợp 4: Tỉ Lệ Cân Bằng</div>
+                        <div class="rec-stat-content">
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Đúng</div>
+                                <div class="rec-stat-value correct" id="case4RecCorrect">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Sai</div>
+                                <div class="rec-stat-value wrong" id="case4RecWrong">0</div>
+                            </div>
+                            <div class="rec-stat-item">
+                                <div class="rec-stat-label">Tỉ lệ</div>
+                                <div class="rec-stat-value rate" id="case4RecRate">--%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trend-statistics">
+                <div class="trend-stat-card">
+                    <div class="trend-stat-label">Tổng Phân Tích</div>
+                    <div class="trend-stat-value" id="totalAnalyzed">0</div>
+                </div>
+                <div class="trend-stat-card">
+                    <div class="trend-stat-label">Dự Đoán Đúng</div>
+                    <div class="trend-stat-value" id="correctPredictions">0</div>
+                </div>
+                <div class="trend-stat-card">
+                    <div class="trend-stat-label">Trường Hợp Phổ Biến</div>
+                    <div class="trend-stat-value" id="mostCommonCase">-</div>
+                </div>
+                <div class="trend-stat-card">
+                    <div class="trend-stat-label">Xu Hướng Mạnh Nhất</div>
+                    <div class="trend-stat-value" id="strongestTrend">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PATTERN DETECTION SECTION -->
+        <div class="pattern-detection-section">
+            <div class="pattern-detection-header">
+                🎯 NHẬN DIỆN CẦU CHUYÊN SÂU
+            </div>
+            
+            <div class="pattern-alert" id="patternAlert" style="display: none;">
+                <div class="pattern-alert-title">⚡ PHÁT HIỆN CẦU ĐẶC BIỆT!</div>
+                <div id="patternAlertContent"></div>
+            </div>
+            
+            <div class="pattern-grid">
+                <div class="pattern-card" id="dragonPattern">
+                    <div class="pattern-name">
+                        <span class="pattern-icon">🐉</span>
+                        <span>Cầu Bệt (Dragon)</span>
+                    </div>
+                    <div class="pattern-description">4+ kết quả liên tiếp</div>
+                    <div class="pattern-strength-bar">
+                        <div class="pattern-strength-fill" id="dragonStrength" style="width: 0%"></div>
+                    </div>
+                    <div class="pattern-status">
+                        <span>Trạng thái: <span id="dragonStatus">Chờ</span></span>
+                        <span class="pattern-confidence" id="dragonConfidence">0%</span>
+                    </div>
+                </div>
+                
+                <div class="pattern-card" id="pingpongPattern">
+                    <div class="pattern-name">
+                        <span class="pattern-icon">🏓</span>
+                        <span>Cầu 11 (Ping Pong)</span>
+                    </div>
+                    <div class="pattern-description">PBPBPB hoặc BPBPBP</div>
+                    <div class="pattern-strength-bar">
+                        <div class="pattern-strength-fill" id="pingpongStrength" style="width: 0%"></div>
+                    </div>
+                    <div class="pattern-status">
+                        <span>Trạng thái: <span id="pingpongStatus">Chờ</span></span>
+                        <span class="pattern-confidence" id="pingpongConfidence">0%</span>
+                    </div>
+                </div>
+                
+                <div class="pattern-card" id="pattern1212Card">
+                    <div class="pattern-name">
+                        <span class="pattern-icon">🔄</span>
+                        <span>Cầu 1212</span>
+                    </div>
+                    <div class="pattern-description">P-BB-P-BB hoặc tương tự</div>
+                    <div class="pattern-strength-bar">
+                        <div class="pattern-strength-fill" id="pattern1212Strength" style="width: 0%"></div>
+                    </div>
+                    <div class="pattern-status">
+                        <span>Trạng thái: <span id="pattern1212Status">Chờ</span></span>
+                        <span class="pattern-confidence" id="pattern1212Confidence">0%</span>
+                    </div>
+                </div>
+                
+                <div class="pattern-card" id="pattern123Card">
+                    <div class="pattern-name">
+                        <span class="pattern-icon">📈</span>
+                        <span>Cầu 123</span>
+                    </div>
+                    <div class="pattern-description">P-BB-PPP (tăng dần)</div>
+                    <div class="pattern-strength-bar">
+                        <div class="pattern-strength-fill" id="pattern123Strength" style="width: 0%"></div>
+                    </div>
+                    <div class="pattern-status">
+                        <span>Trạng thái: <span id="pattern123Status">Chờ</span></span>
+                        <span class="pattern-confidence" id="pattern123Confidence">0%</span>
+                    </div>
+                </div>
+                
+                <div class="pattern-card" id="pattern22Card">
+                    <div class="pattern-name">
+                        <span class="pattern-icon">🔀</span>
+                        <span>Cầu 2-2</span>
+                    </div>
+                    <div class="pattern-description">PP-BB-PP-BB</div>
+                    <div class="pattern-strength-bar">
+                        <div class="pattern-strength-fill" id="pattern22Strength" style="width: 0%"></div>
+                    </div>
+                    <div class="pattern-status">
+                        <span>Trạng thái: <span id="pattern22Status">Chờ</span></span>
+                        <span class="pattern-confidence" id="pattern22Confidence">0%</span>
+                    </div>
+                </div>
+                
+                <div class="pattern-card" id="zigzagCard">
+                    <div class="pattern-name">
+                        <span class="pattern-icon">⚡</span>
+                        <span>Cầu Zigzag</span>
+                    </div>
+                    <div class="pattern-description">Dao động liên tục</div>
+                    <div class="pattern-strength-bar">
+                        <div class="pattern-strength-fill" id="zigzagStrength" style="width: 0%"></div>
+                    </div>
+                    <div class="pattern-status">
+                        <span>Trạng thái: <span id="zigzagStatus">Chờ</span></span>
+                        <span class="pattern-confidence" id="zigzagConfidence">0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(0, 0, 0, 0.3); border-radius: 10px;">
+                <div style="font-weight: bold; color: #9b59b6; margin-bottom: 10px;">📊 Tổng hợp phát hiện cầu:</div>
+                <div id="patternSummary" style="color: #ccc;">Đang phân tích...</div>
+            </div>
+        </div>
+
+        <!-- ADVANCED ANALYTICS SECTION -->
+        <div class="advanced-analytics">
+            <div class="analytics-header">
+                🧠 PHÂN TÍCH NÂNG CAO AI & MACHINE LEARNING
+            </div>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <div class="analytics-card-title">
+                        🎲 Bayesian Prediction
+                    </div>
+                    <div class="analytics-content">
+                        <div class="analytics-item">
+                            <span class="analytics-label">Posterior P(Con)</span>
+                            <span class="analytics-value" id="bayesianP">--%</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Posterior P(Cái)</span>
+                            <span class="analytics-value" id="bayesianB">--%</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Posterior P(Hòa)</span>
+                            <span class="analytics-value" id="bayesianT">--%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="analytics-card-title">
+                        📊 LSTM Neural Network
+                    </div>
+                    <div class="analytics-content">
+                        <div class="analytics-item">
+                            <span class="analytics-label">Sequence Prediction</span>
+                            <span class="analytics-value" id="lstmPrediction">-</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Confidence Level</span>
+                            <span class="analytics-value" id="lstmConfidence">--%</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Memory State</span>
+                            <span class="analytics-value" id="lstmMemory">Stable</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="analytics-card-title">
+                        🔥 Hot/Cold Analysis
+                    </div>
+                    <div class="analytics-content">
+                        <div class="analytics-item">
+                            <span class="analytics-label">Số Nóng</span>
+                            <span class="analytics-value hot-number" id="hotNumbers">-</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Số Lạnh</span>
+                            <span class="analytics-value cold-number" id="coldNumbers">-</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Đề xuất</span>
+                            <span class="analytics-value" id="hotColdSuggestion">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="analytics-card-title">
+                        👟 Shoe Tracking (8 Decks)
+                    </div>
+                    <div class="analytics-content">
+                        <div class="analytics-item">
+                            <span class="analytics-label">Penetration</span>
+                            <span class="analytics-value" id="shoePenetration">0%</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Decks còn lại</span>
+                            <span class="analytics-value" id="remainingDecks">8.0</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Độ tin cậy</span>
+                            <span class="analytics-value" id="shoeReliability">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="analytics-card-title">
+                        💰 Kelly Criterion (Quản lý vốn)
+                    </div>
+                    <div class="analytics-content">
+                        <div class="analytics-item">
+                            <span class="analytics-label">Tỉ lệ cược tối ưu</span>
+                            <span class="analytics-value" id="kellyPercent">--%</span>
+                        </div>
+                        <div class="kelly-bet">
+                            <div style="font-size: 0.9em; color: #aaa;">Số tiền đề xuất</div>
+                            <div class="kelly-amount" id="kellyAmount">$0</div>
+                            <span class="risk-indicator" id="kellyRisk">Low Risk</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="analytics-card-title">
+                        🎯 Multi-Algorithm Consensus
+                    </div>
+                    <div class="analytics-content">
+                        <div class="analytics-item">
+                            <span class="analytics-label">Algorithms Agree</span>
+                            <span class="analytics-value" id="algoConsensus">0/10</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Confidence Score</span>
+                            <span class="analytics-value" id="overallConfidence">--%</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-label">Final Decision</span>
+                            <span class="analytics-value" id="finalDecision" style="font-size: 1.2em;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SMART STRATEGY SECTION -->
+        <div class="strategy-alert" id="strategyAlert" style="display: none;">
+            <div class="strategy-title">⚡ CHIẾN LƯỢC THÔNG MINH AI</div>
+            <div class="strategy-content" id="strategyContent">
+                Đang phân tích...
+            </div>
+        </div>
+
+        <div class="roadmap-container">
+            <h2>🛤️ Bảng Cầu Chính</h2>
+            <div class="roadmap" id="mainRoadmap"></div>
+            
+            <h3>📈 Bảng Cầu Phụ</h3>
+            <div class="roadmap" id="derivedRoadmap"></div>
+        </div>
+
+        <div class="pattern-analysis">
+            <h2>🔍 Phân Tích Quy Luật</h2>
+            <div id="patternList"></div>
+        </div>
+
+        <div class="advanced-metrics">
+            <div class="algorithm-info">
+                <h3>🧠 Thuật Toán AI & ML Đang Sử Dụng</h3>
+                <ul class="algorithm-list">
+                    <li>Markov Chain (Chuỗi Markov bậc 3)</li>
+                    <li>Pattern Recognition (Nhận dạng mẫu cơ bản)</li>
+                    <li>Advanced Pattern Recognition - Cầu Chuyên Sâu <span class="algorithm-badge" style="background: linear-gradient(135deg, #ff6b6b, #ff8787); animation: pulse 1s infinite;">HOT</span></li>
+                    <li>• Cầu Bệt (Dragon) Detection</li>
+                    <li>• Cầu 11 (Ping Pong) Analysis</li>
+                    <li>• Cầu 1212, 123, 2-2 Recognition</li>
+                    <li>• Zigzag & Complex Pattern Matching</li>
+                    <li>Cycle Detection (Phát hiện chu kỳ)</li>
+                    <li>Statistical Analysis (Phân tích thống kê)</li>
+                    <li>Trend Analysis (Phân tích xu hướng)</li>
+                    <li>Bayesian Inference <span class="algorithm-badge">NEW</span></li>
+                    <li>LSTM Neural Network <span class="algorithm-badge">NEW</span></li>
+                    <li>Hot/Cold Number Analysis <span class="algorithm-badge">NEW</span></li>
+                    <li>Shoe Tracking System <span class="algorithm-badge">NEW</span></li>
+                    <li>Kelly Criterion Calculator <span class="algorithm-badge">NEW</span></li>
+                    <li>Monte Carlo Simulation</li>
+                    <li>Fibonacci Sequence Analysis</li>
+                    <li>Random Forest Ensemble <span class="algorithm-badge">PREMIUM</span></li>
+                </ul>
+            </div>
+
+            <div class="algorithm-info">
+                <h3>📊 Chỉ Số Nâng Cao</h3>
+                <div id="advancedMetrics"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Biến lưu trữ dữ liệu
+        let gameHistory = [];
+        let patterns = {};
+        let cycles = [];
+        let predictions = {};
+        
+        // Biến cho hệ thống phân tích xu hướng độc lập
+        let trendAnalysisHistory = [];
+        let trendStatistics = {
+            case1: { P: 0, B: 0, T: 0, total: 0 },
+            case2: { P: 0, B: 0, T: 0, total: 0 },
+            case3: { P: 0, B: 0, T: 0, total: 0 },
+            case4: { P: 0, B: 0, T: 0, total: 0 }
+        };
+        
+        // Thêm biến lưu trữ phân tích độ chính xác
+        let predictionAccuracy = {
+            case1: { high: [], mid: [], low: [] },
+            case2: { high: [], mid: [], low: [] },
+            case3: { high: [], mid: [], low: [] },
+            case4: { high: [], mid: [], low: [] }
+        };
+        
+        // Thêm biến theo dõi đề xuất đúng/sai
+        let recommendationStats = {
+            case1: { correct: 0, wrong: 0 },
+            case2: { correct: 0, wrong: 0 },
+            case3: { correct: 0, wrong: 0 },
+            case4: { correct: 0, wrong: 0 }
+        };
+        let lastRecommendation = null;
+
+        // Lớp nhận diện cầu chuyên sâu
+        class AdvancedPatternRecognizer {
+            constructor() {
+                this.patterns = {
+                    // Cầu bệt (Dragon)
+                    dragon: {
+                        name: 'Cầu Bệt (Dragon)',
+                        minLength: 4,
+                        check: (seq) => this.checkDragon(seq),
+                        icon: '🐉',
+                        color: '#ff6b6b'
+                    },
+                    // Cầu 11 (Ping Pong)
+                    pingpong: {
+                        name: 'Cầu 11 (Ping Pong)',
+                        minLength: 6,
+                        check: (seq) => this.checkPingPong(seq),
+                        icon: '🏓',
+                        color: '#4ecdc4'
+                    },
+                    // Cầu 1212
+                    pattern1212: {
+                        name: 'Cầu 1212',
+                        minLength: 6,
+                        check: (seq) => this.checkPattern1212(seq),
+                        icon: '🔄',
+                        color: '#f39c12'
+                    },
+                    // Cầu 123 (Tăng dần)
+                    pattern123: {
+                        name: 'Cầu 123',
+                        minLength: 6,
+                        check: (seq) => this.checkPattern123(seq),
+                        icon: '📈',
+                        color: '#9b59b6'
+                    },
+                    // Cầu 2-2
+                    pattern22: {
+                        name: 'Cầu 2-2',
+                        minLength: 8,
+                        check: (seq) => this.checkPattern22(seq),
+                        icon: '🔀',
+                        color: '#3498db'
+                    },
+                    // Cầu Zigzag
+                    zigzag: {
+                        name: 'Cầu Zigzag',
+                        minLength: 5,
+                        check: (seq) => this.checkZigzag(seq),
+                        icon: '⚡',
+                        color: '#e74c3c'
+                    },
+                    // Cầu phức tạp 112141
+                    complex: {
+                        name: 'Cầu Phức Tạp',
+                        minLength: 8,
+                        check: (seq) => this.checkComplexPattern(seq),
+                        icon: '🎯',
+                        color: '#ffd700'
+                    }
+                };
+                
+                this.detectedPatterns = [];
+                this.patternHistory = [];
+            }
+            
+            // Kiểm tra cầu bệt (4+ liên tiếp)
+            checkDragon(seq) {
+                if (seq.length < 4) return null;
+                
+                const last4 = seq.slice(-4);
+                if (last4.every(s => s === 'P') || last4.every(s => s === 'B')) {
+                    // Đếm độ dài chuỗi
+                    let length = 4;
+                    for (let i = seq.length - 5; i >= 0; i--) {
+                        if (seq[i] === last4[0]) length++;
+                        else break;
+                    }
+                    
+                    return {
+                        type: 'dragon',
+                        value: last4[0],
+                        length: length,
+                        strength: Math.min(1, length / 10), // Độ mạnh tăng theo độ dài
+                        prediction: last4[0], // Dự đoán tiếp tục chuỗi
+                        confidence: Math.min(0.9, 0.5 + length * 0.05)
+                    };
+                }
+                return null;
+            }
+            
+            // Kiểm tra cầu 11 (PBPBPB)
+            checkPingPong(seq) {
+                if (seq.length < 6) return null;
+                
+                const last6 = seq.slice(-6);
+                let isPingPong = true;
+                
+                for (let i = 0; i < 5; i++) {
+                    if (last6[i] === last6[i + 1]) {
+                        isPingPong = false;
+                        break;
+                    }
+                }
+                
+                if (isPingPong && (last6[0] === 'P' || last6[0] === 'B')) {
+                    const nextPred = last6[5] === 'P' ? 'B' : 'P';
+                    
+                    return {
+                        type: 'pingpong',
+                        pattern: '11',
+                        length: 6,
+                        strength: 0.8,
+                        prediction: nextPred,
+                        confidence: 0.75
+                    };
+                }
+                return null;
+            }
+            
+            // Kiểm tra cầu 1212 (P-BB-P-BB)
+            checkPattern1212(seq) {
+                if (seq.length < 6) return null;
+                
+                // Chuyển đổi sequence thành chuỗi độ dài
+                const lengths = this.convertToLengths(seq);
+                
+                // Kiểm tra pattern 1-2-1-2
+                if (lengths.slice(-4).join('') === '1212') {
+                    return {
+                        type: 'pattern1212',
+                        pattern: '1212',
+                        strength: 0.75,
+                        prediction: seq[seq.length - 2], // Dự đoán theo pattern
+                        confidence: 0.7
+                    };
+                }
+                return null;
+            }
+            
+            // Kiểm tra cầu 123 (tăng dần)
+            checkPattern123(seq) {
+                if (seq.length < 6) return null;
+                
+                const lengths = this.convertToLengths(seq);
+                const lastLengths = lengths.slice(-3);
+                
+                // Kiểm tra xem có tăng dần không
+                if (lastLengths.length >= 3 && 
+                    lastLengths[1] === lastLengths[0] + 1 && 
+                    lastLengths[2] === lastLengths[1] + 1) {
+                    
+                    const nextLength = lastLengths[2] + 1;
+                    const currentType = seq[seq.length - 1];
+                    
+                    return {
+                        type: 'pattern123',
+                        pattern: lastLengths.join(''),
+                        nextLength: nextLength,
+                        strength: 0.7,
+                        prediction: currentType, // Tiếp tục chuỗi hiện tại
+                        confidence: 0.65
+                    };
+                }
+                return null;
+            }
+            
+            // Kiểm tra cầu 2-2 (PP-BB-PP-BB)
+            checkPattern22(seq) {
+                if (seq.length < 8) return null;
+                
+                const last8 = seq.slice(-8);
+                
+                if (last8[0] === last8[1] && last8[0] !== last8[2] &&
+                    last8[2] === last8[3] && last8[2] !== last8[4] &&
+                    last8[4] === last8[5] && last8[4] !== last8[6] &&
+                    last8[6] === last8[7]) {
+                    
+                    const nextPred = last8[6] === 'P' ? 'B' : 'P';
+                    
+                    return {
+                        type: 'pattern22',
+                        pattern: '2-2',
+                        strength: 0.8,
+                        prediction: nextPred,
+                        confidence: 0.75
+                    };
+                }
+                return null;
+            }
+            
+            // Kiểm tra Zigzag (thay đổi hướng liên tục)
+            checkZigzag(seq) {
+                if (seq.length < 5) return null;
+                
+                const last5 = seq.slice(-5);
+                let changes = 0;
+                
+                for (let i = 0; i < 4; i++) {
+                    if (last5[i] !== last5[i + 1]) changes++;
+                }
+                
+                if (changes >= 3) {
+                    // Phân tích xu hướng zigzag
+                    const pattern = this.analyzeZigzagTrend(seq);
+                    
+                    return {
+                        type: 'zigzag',
+                        pattern: 'zigzag',
+                        changes: changes,
+                        strength: 0.6,
+                        prediction: pattern.prediction,
+                        confidence: 0.55
+                    };
+                }
+                return null;
+            }
+            
+            // Kiểm tra pattern phức tạp
+            checkComplexPattern(seq) {
+                if (seq.length < 8) return null;
+                
+                const lengths = this.convertToLengths(seq);
+                const pattern = lengths.slice(-5).join('');
+                
+                // Một số pattern phức tạp thường gặp
+                const complexPatterns = {
+                    '11214': { next: 1, confidence: 0.65 },
+                    '12121': { next: 2, confidence: 0.7 },
+                    '11311': { next: 3, confidence: 0.6 },
+                    '21212': { next: 1, confidence: 0.7 }
+                };
+                
+                if (complexPatterns[pattern]) {
+                    const currentType = seq[seq.length - 1];
+                    const shouldSwitch = complexPatterns[pattern].next === 1;
+                    const prediction = shouldSwitch ? (currentType === 'P' ? 'B' : 'P') : currentType;
+                    
+                    return {
+                        type: 'complex',
+                        pattern: pattern,
+                        strength: 0.65,
+                        prediction: prediction,
+                        confidence: complexPatterns[pattern].confidence
+                    };
+                }
+                return null;
+            }
+            
+            // Chuyển đổi sequence thành mảng độ dài chuỗi
+            convertToLengths(seq) {
+                const lengths = [];
+                let currentLength = 1;
+                
+                for (let i = 1; i < seq.length; i++) {
+                    if (seq[i] === seq[i - 1]) {
+                        currentLength++;
+                    } else {
+                        lengths.push(currentLength);
+                        currentLength = 1;
+                    }
+                }
+                lengths.push(currentLength);
+                
+                return lengths;
+            }
+            
+            // Phân tích xu hướng zigzag
+            analyzeZigzagTrend(seq) {
+                const last = seq[seq.length - 1];
+                const secondLast = seq[seq.length - 2];
+                
+                // Trong zigzag, dự đoán ngược lại với kết quả hiện tại
+                return {
+                    prediction: last === 'P' ? 'B' : 'P'
+                };
+            }
+            
+            // Phát hiện tất cả patterns
+            detectAllPatterns(sequence) {
+                this.detectedPatterns = [];
+                
+                // Lọc chỉ lấy P và B (bỏ qua T)
+                const filteredSeq = sequence.filter(s => s === 'P' || s === 'B');
+                
+                if (filteredSeq.length < 4) return this.detectedPatterns;
+                
+                // Kiểm tra từng loại pattern
+                for (let patternType in this.patterns) {
+                    const pattern = this.patterns[patternType];
+                    if (filteredSeq.length >= pattern.minLength) {
+                        const result = pattern.check(filteredSeq);
+                        if (result) {
+                            this.detectedPatterns.push({
+                                ...result,
+                                name: pattern.name,
+                                icon: pattern.icon,
+                                color: pattern.color
+                            });
+                        }
+                    }
+                }
+                
+                // Sắp xếp theo độ tin cậy
+                this.detectedPatterns.sort((a, b) => b.confidence - a.confidence);
+                
+                return this.detectedPatterns;
+            }
+            
+            // Lấy dự đoán từ patterns
+            getPatternPrediction() {
+                if (this.detectedPatterns.length === 0) {
+                    return { prediction: null, confidence: 0, pattern: null };
+                }
+                
+                // Lấy pattern có độ tin cậy cao nhất
+                const bestPattern = this.detectedPatterns[0];
+                
+                return {
+                    prediction: bestPattern.prediction,
+                    confidence: bestPattern.confidence,
+                    pattern: bestPattern.name,
+                    icon: bestPattern.icon
+                };
+            }
+            
+            // Tạo báo cáo pattern
+            generatePatternReport() {
+                if (this.detectedPatterns.length === 0) {
+                    return 'Chưa phát hiện cầu đặc biệt';
+                }
+                
+                let report = '<div class="pattern-report">';
+                
+                this.detectedPatterns.forEach(pattern => {
+                    report += `
+                        <div class="pattern-item-detected" style="border-left: 3px solid ${pattern.color};">
+                            <span style="font-size: 1.2em;">${pattern.icon}</span>
+                            <strong>${pattern.name}</strong>
+                            <span style="color: #ffd700;">Độ tin cậy: ${(pattern.confidence * 100).toFixed(0)}%</span>
+                            <span style="color: ${pattern.prediction === 'P' ? '#007bff' : '#dc3545'};">
+                                → Dự đoán: ${pattern.prediction === 'P' ? 'CON' : 'CÁI'}
+                            </span>
+                        </div>
+                    `;
+                });
+                
+                report += '</div>';
+                return report;
+            }
+        }
+        
+        // Lớp phân tích Baccarat nâng cao với ML
+        class BaccaratAnalyzer {
+            constructor() {
+                this.markovChain = {};
+                this.patternLibrary = new Map();
+                this.cycleAnalyzer = new CycleAnalyzer();
+                this.advancedMetrics = {};
+                this.bayesianModel = new BayesianPredictor();
+                this.lstmSimulator = new LSTMSimulator();
+                this.shoeTracker = new ShoeTracker();
+                this.hotColdAnalyzer = new HotColdAnalyzer();
+                this.kellyCalculator = new KellyCalculator();
+                this.patternRecognizer = new AdvancedPatternRecognizer();
+            }
+
+            // Phân tích Markov Chain bậc cao
+            analyzeMarkovChain(history, order = 3) {
+                if (history.length < order + 1) return {};
+                
+                const transitions = {};
+                for (let i = 0; i < history.length - order; i++) {
+                    const state = history.slice(i, i + order).join('');
+                    const next = history[i + order];
+                    
+                    if (!transitions[state]) {
+                        transitions[state] = { P: 0, B: 0, T: 0, total: 0 };
+                    }
+                    
+                    if (next === 'P' || next === 'B' || next === 'T') {
+                        transitions[state][next]++;
+                        transitions[state].total++;
+                    }
+                }
+                
+                // Tính xác suất
+                for (let state in transitions) {
+                    const t = transitions[state];
+                    transitions[state].probP = t.P / t.total;
+                    transitions[state].probB = t.B / t.total;
+                    transitions[state].probT = t.T / t.total;
+                }
+                
+                return transitions;
+            }
+
+            // Phát hiện mẫu phức tạp
+            detectComplexPatterns(history) {
+                const patterns = [];
+                
+                // Mẫu lặp đơn giản
+                for (let len = 2; len <= Math.min(10, history.length / 2); len++) {
+                    for (let i = 0; i <= history.length - len * 2; i++) {
+                        const pattern = history.slice(i, i + len).join('');
+                        const nextOccurrence = history.slice(i + len, i + len * 2).join('');
+                        
+                        if (pattern === nextOccurrence) {
+                            patterns.push({
+                                type: 'repeat',
+                                pattern: pattern,
+                                position: i,
+                                length: len,
+                                confidence: this.calculatePatternConfidence(history, pattern)
+                            });
+                        }
+                    }
+                }
+                
+                // Mẫu đối xứng
+                for (let len = 3; len <= Math.min(10, history.length); len++) {
+                    for (let i = 0; i <= history.length - len; i++) {
+                        const segment = history.slice(i, i + len);
+                        const reversed = [...segment].reverse();
+                        
+                        if (segment.join('') === reversed.join('')) {
+                            patterns.push({
+                                type: 'symmetric',
+                                pattern: segment.join(''),
+                                position: i,
+                                length: len,
+                                confidence: 0.7
+                            });
+                        }
+                    }
+                }
+                
+                // Mẫu tăng/giảm
+                const streaks = this.findStreaks(history);
+                patterns.push(...streaks);
+                
+                return patterns;
+            }
+
+            // Tìm chuỗi liên tiếp
+            findStreaks(history) {
+                const streaks = [];
+                let currentStreak = { type: history[0], count: 1, start: 0 };
+                
+                for (let i = 1; i < history.length; i++) {
+                    if (history[i] === currentStreak.type) {
+                        currentStreak.count++;
+                    } else {
+                        if (currentStreak.count >= 3) {
+                            streaks.push({
+                                type: 'streak',
+                                pattern: currentStreak.type.repeat(currentStreak.count),
+                                position: currentStreak.start,
+                                length: currentStreak.count,
+                                confidence: Math.min(0.9, currentStreak.count * 0.15)
+                            });
+                        }
+                        currentStreak = { type: history[i], count: 1, start: i };
+                    }
+                }
+                
+                return streaks;
+            }
+
+            // Tính độ tin cậy của mẫu
+            calculatePatternConfidence(history, pattern) {
+                let occurrences = 0;
+                const patternLength = pattern.length;
+                
+                for (let i = 0; i <= history.length - patternLength; i++) {
+                    if (history.slice(i, i + patternLength).join('') === pattern) {
+                        occurrences++;
+                    }
+                }
+                
+                return Math.min(0.95, occurrences * 0.1);
+            }
+
+            // Dự đoán dựa trên nhiều thuật toán
+            predict(history) {
+                if (history.length < 3) {
+                    return { P: 33.3, B: 33.3, T: 33.3 };
+                }
+                
+                const predictions = [];
+                
+                // 1. Markov Chain Prediction
+                const markovPred = this.markovPredict(history);
+                if (markovPred) predictions.push({ ...markovPred, weight: 0.15 });
+                
+                // 2. Pattern-based Prediction (Original)
+                const patternPred = this.patternPredict(history);
+                if (patternPred) predictions.push({ ...patternPred, weight: 0.1 });
+                
+                // 3. Advanced Pattern Recognition (NEW - Cầu chuyên sâu)
+                const advPatterns = this.patternRecognizer.detectAllPatterns(history);
+                const advPatternPred = this.patternRecognizer.getPatternPrediction();
+                if (advPatternPred.prediction) {
+                    const pred = { P: 30, B: 30, T: 30 };
+                    pred[advPatternPred.prediction] = 40 + (advPatternPred.confidence * 30);
+                    predictions.push({ ...pred, weight: 0.2 }); // Trọng số cao cho cầu chuyên sâu
+                }
+                
+                // 4. Cycle-based Prediction
+                const cyclePred = this.cyclePredict(history);
+                if (cyclePred) predictions.push({ ...cyclePred, weight: 0.08 });
+                
+                // 5. Statistical Prediction
+                const statPred = this.statisticalPredict(history);
+                if (statPred) predictions.push({ ...statPred, weight: 0.08 });
+                
+                // 6. Trend Prediction
+                const trendPred = this.trendPredict(history);
+                if (trendPred) predictions.push({ ...trendPred, weight: 0.04 });
+                
+                // 7. Bayesian Prediction
+                const bayesianPred = this.bayesianModel.update(history);
+                if (bayesianPred) predictions.push({ ...bayesianPred, weight: 0.15 });
+                
+                // 8. LSTM Prediction
+                const lstmPred = this.lstmSimulator.predict(history);
+                if (lstmPred) predictions.push({ ...lstmPred, weight: 0.15 });
+                
+                // 9. Hot/Cold Analysis
+                const hotColdAnalysis = this.hotColdAnalyzer.analyze(history);
+                if (hotColdAnalysis.suggestion.target) {
+                    const hotColdPred = { P: 30, B: 30, T: 30 };
+                    hotColdPred[hotColdAnalysis.suggestion.target] = 40;
+                    predictions.push({ ...hotColdPred, weight: 0.05 });
+                }
+                
+                // Điều chỉnh theo shoe penetration
+                const shoeFactor = this.shoeTracker.getPenetrationFactor();
+                
+                // Kết hợp dự đoán với trọng số điều chỉnh
+                const combined = this.combinePredictions(predictions);
+                
+                // Áp dụng shoe factor
+                for (let key in combined) {
+                    combined[key] = combined[key] * shoeFactor + (100 - combined[key]) * (1 - shoeFactor) * 0.33;
+                }
+                
+                return combined;
+            }
+
+            markovPredict(history) {
+                const order = Math.min(3, history.length - 1);
+                const transitions = this.analyzeMarkovChain(history, order);
+                const currentState = history.slice(-order).join('');
+                
+                if (transitions[currentState]) {
+                    return {
+                        P: transitions[currentState].probP * 100,
+                        B: transitions[currentState].probB * 100,
+                        T: transitions[currentState].probT * 100
+                    };
+                }
+                return null;
+            }
+
+            patternPredict(history) {
+                const patterns = this.detectComplexPatterns(history);
+                if (patterns.length === 0) return null;
+                
+                // Sử dụng mẫu có độ tin cậy cao nhất
+                const bestPattern = patterns.reduce((a, b) => 
+                    a.confidence > b.confidence ? a : b
+                );
+                
+                // Dự đoán dựa trên mẫu
+                const patternStr = bestPattern.pattern;
+                const lastChar = patternStr[patternStr.length - 1];
+                
+                // Tăng xác suất cho kết quả theo mẫu
+                const prediction = { P: 20, B: 20, T: 20 };
+                prediction[lastChar] += 40 * bestPattern.confidence;
+                
+                return prediction;
+            }
+
+            cyclePredict(history) {
+                const cycles = this.cycleAnalyzer.findCycles(history);
+                if (cycles.length === 0) return null;
+                
+                const bestCycle = cycles[0];
+                const position = history.length % bestCycle.length;
+                const nextValue = bestCycle.pattern[position];
+                
+                const prediction = { P: 25, B: 25, T: 25 };
+                prediction[nextValue] += 25;
+                
+                return prediction;
+            }
+
+            statisticalPredict(history) {
+                const counts = { P: 0, B: 0, T: 0 };
+                history.forEach(h => {
+                    if (counts[h] !== undefined) counts[h]++;
+                });
+                
+                const total = counts.P + counts.B + counts.T;
+                
+                // Điều chỉnh theo xu hướng cân bằng
+                const expected = total / 3;
+                const prediction = {};
+                
+                ['P', 'B', 'T'].forEach(key => {
+                    const diff = expected - counts[key];
+                    prediction[key] = 33.3 + (diff * 2);
+                });
+                
+                return prediction;
+            }
+
+            trendPredict(history) {
+                const recentHistory = history.slice(-10);
+                const counts = { P: 0, B: 0, T: 0 };
+                
+                recentHistory.forEach(h => {
+                    if (counts[h] !== undefined) counts[h]++;
+                });
+                
+                const total = Math.max(1, counts.P + counts.B + counts.T);
+                
+                return {
+                    P: (counts.P / total) * 100,
+                    B: (counts.B / total) * 100,
+                    T: (counts.T / total) * 100
+                };
+            }
+
+            combinePredictions(predictions) {
+                if (predictions.length === 0) {
+                    return { P: 33.3, B: 33.3, T: 33.3 };
+                }
+                
+                let combined = { P: 0, B: 0, T: 0 };
+                let totalWeight = 0;
+                
+                predictions.forEach(pred => {
+                    combined.P += pred.P * pred.weight;
+                    combined.B += pred.B * pred.weight;
+                    combined.T += pred.T * pred.weight;
+                    totalWeight += pred.weight;
+                });
+                
+                // Chuẩn hóa
+                const sum = combined.P + combined.B + combined.T;
+                if (sum > 0) {
+                    combined.P = (combined.P / sum) * 100;
+                    combined.B = (combined.B / sum) * 100;
+                    combined.T = (combined.T / sum) * 100;
+                }
+                
+                return combined;
+            }
+        }
+
+        // Lớp Bayesian Predictor - Dự đoán theo xác suất Bayes
+        class BayesianPredictor {
+            constructor() {
+                this.priors = { P: 0.5, B: 0.5, T: 0.08 }; // Xác suất tiên nghiệm
+                this.likelihoods = {};
+                this.posteriors = {};
+            }
+            
+            update(history) {
+                if (history.length < 2) return this.priors;
+                
+                // Cập nhật likelihood dựa trên dữ liệu
+                const counts = { P: 0, B: 0, T: 0 };
+                history.forEach(h => counts[h]++);
+                const total = history.length;
+                
+                // Tính posterior probability
+                const evidence = this.calculateEvidence(history);
+                
+                for (let outcome of ['P', 'B', 'T']) {
+                    const likelihood = this.calculateLikelihood(outcome, history);
+                    this.posteriors[outcome] = (likelihood * this.priors[outcome]) / evidence;
+                }
+                
+                // Cập nhật priors cho lần tiếp theo
+                this.priors = { ...this.posteriors };
+                
+                return {
+                    P: this.posteriors.P * 100,
+                    B: this.posteriors.B * 100,
+                    T: this.posteriors.T * 100
+                };
+            }
+            
+            calculateLikelihood(outcome, history) {
+                const recent = history.slice(-20); // Xét 20 ván gần nhất
+                const count = recent.filter(h => h === outcome).length;
+                return (count + 1) / (recent.length + 3); // Laplace smoothing
+            }
+            
+            calculateEvidence(history) {
+                let evidence = 0;
+                for (let outcome of ['P', 'B', 'T']) {
+                    evidence += this.calculateLikelihood(outcome, history) * this.priors[outcome];
+                }
+                return evidence || 1;
+            }
+        }
+        
+        // Lớp LSTM Simulator - Mô phỏng LSTM đơn giản
+        class LSTMSimulator {
+            constructor() {
+                this.memory = [];
+                this.forgetGate = 0.8;
+                this.inputGate = 0.5;
+                this.outputGate = 0.5;
+                this.weights = this.initializeWeights();
+            }
+            
+            initializeWeights() {
+                return {
+                    P: { P: 0.4, B: 0.3, T: 0.3 },
+                    B: { P: 0.3, B: 0.4, T: 0.3 },
+                    T: { P: 0.35, B: 0.35, T: 0.3 }
+                };
+            }
+            
+            predict(history) {
+                if (history.length < 5) {
+                    return { P: 33.3, B: 33.3, T: 33.3 };
+                }
+                
+                // Simplified LSTM logic
+                const sequence = history.slice(-10);
+                let cellState = { P: 0, B: 0, T: 0 };
+                
+                sequence.forEach((outcome, idx) => {
+                    // Forget gate
+                    for (let key in cellState) {
+                        cellState[key] *= this.forgetGate;
+                    }
+                    
+                    // Input gate
+                    cellState[outcome] += this.inputGate;
+                    
+                    // Update weights based on transitions
+                    if (idx > 0) {
+                        const prev = sequence[idx - 1];
+                        this.weights[prev][outcome] += 0.01; // Learning rate
+                        
+                        // Normalize weights
+                        const sum = Object.values(this.weights[prev]).reduce((a, b) => a + b, 0);
+                        for (let key in this.weights[prev]) {
+                            this.weights[prev][key] /= sum;
+                        }
+                    }
+                });
+                
+                // Output gate - predict next
+                const lastOutcome = sequence[sequence.length - 1];
+                const predictions = this.weights[lastOutcome];
+                
+                return {
+                    P: predictions.P * 100,
+                    B: predictions.B * 100,
+                    T: predictions.T * 100
+                };
+            }
+        }
+        
+        // Lớp Shoe Tracker - Theo dõi bộ bài
+        class ShoeTracker {
+            constructor() {
+                this.totalCards = 416; // 8 decks
+                this.cardsPlayed = 0;
+                this.penetration = 0;
+                this.remainingDecks = 8;
+            }
+            
+            update(gameCount) {
+                // Ước tính số lá bài đã chơi (trung bình 5.5 lá/ván)
+                this.cardsPlayed = gameCount * 5.5;
+                this.penetration = (this.cardsPlayed / this.totalCards) * 100;
+                this.remainingDecks = Math.max(0, 8 - (this.cardsPlayed / 52));
+                
+                return {
+                    penetration: this.penetration,
+                    remainingDecks: this.remainingDecks.toFixed(1),
+                    shouldReset: this.penetration > 75 // Đề xuất reset khi > 75%
+                };
+            }
+            
+            getPenetrationFactor() {
+                // Điều chỉnh dự đoán dựa trên penetration
+                if (this.penetration < 25) return 1.0;
+                if (this.penetration < 50) return 0.95;
+                if (this.penetration < 75) return 0.85;
+                return 0.7; // Độ tin cậy giảm khi gần hết bộ
+            }
+        }
+        
+        // Lớp Hot/Cold Analyzer - Phân tích số nóng/lạnh
+        class HotColdAnalyzer {
+            constructor() {
+                this.windowSize = 20;
+                this.hotThreshold = 0.45; // > 45% là nóng
+                this.coldThreshold = 0.25; // < 25% là lạnh
+            }
+            
+            analyze(history) {
+                if (history.length < this.windowSize) {
+                    return { hot: null, cold: null, status: 'neutral' };
+                }
+                
+                const recent = history.slice(-this.windowSize);
+                const counts = { P: 0, B: 0, T: 0 };
+                recent.forEach(h => counts[h]++);
+                
+                const rates = {
+                    P: counts.P / this.windowSize,
+                    B: counts.B / this.windowSize,
+                    T: counts.T / this.windowSize
+                };
+                
+                let hot = [];
+                let cold = [];
+                
+                for (let key in rates) {
+                    if (rates[key] > this.hotThreshold) {
+                        hot.push(key);
+                    } else if (rates[key] < this.coldThreshold) {
+                        cold.push(key);
+                    }
+                }
+                
+                // Chiến lược: Hot có thể nguội, Cold có thể nóng lên
+                return {
+                    hot: hot,
+                    cold: cold,
+                    status: hot.length > 0 ? 'hot_detected' : cold.length > 0 ? 'cold_detected' : 'neutral',
+                    suggestion: this.getSuggestion(hot, cold, rates)
+                };
+            }
+            
+            getSuggestion(hot, cold, rates) {
+                if (hot.length > 0) {
+                    // Nếu có số nóng, cân nhắc số lạnh có thể bật
+                    if (cold.length > 0) {
+                        return { type: 'balance', target: cold[0], confidence: 0.65 };
+                    }
+                }
+                
+                // Tìm số có xu hướng tăng
+                return { type: 'trend', target: null, confidence: 0.5 };
+            }
+        }
+        
+        // Lớp Kelly Criterion Calculator
+        class KellyCalculator {
+            constructor() {
+                this.bankroll = 1000; // Vốn mặc định
+                this.maxBetPercent = 0.25; // Tối đa 25% vốn
+            }
+            
+            calculate(winProbability, odds = 1) {
+                // Kelly formula: f = (p * b - q) / b
+                // f = fraction to bet, p = win probability, q = lose probability, b = odds
+                const p = winProbability;
+                const q = 1 - p;
+                const b = odds;
+                
+                const kellyPercent = (p * b - q) / b;
+                
+                // Áp dụng giới hạn an toàn
+                const safeBet = Math.min(
+                    Math.max(0, kellyPercent),
+                    this.maxBetPercent
+                );
+                
+                return {
+                    percent: (safeBet * 100).toFixed(1),
+                    amount: (this.bankroll * safeBet).toFixed(0),
+                    risk: this.getRiskLevel(safeBet)
+                };
+            }
+            
+            getRiskLevel(betPercent) {
+                if (betPercent < 0.05) return 'low';
+                if (betPercent < 0.15) return 'medium';
+                return 'high';
+            }
+        }
+        
+        // Lớp phân tích chu kỳ
+        class CycleAnalyzer {
+            findCycles(history) {
+                const cycles = [];
+                
+                for (let len = 2; len <= Math.min(15, history.length / 2); len++) {
+                    let matches = 0;
+                    
+                    for (let i = 0; i < history.length - len; i++) {
+                        if (history[i] === history[i + len]) {
+                            matches++;
+                        }
+                    }
+                    
+                    const matchRate = matches / (history.length - len);
+                    if (matchRate > 0.6) {
+                        cycles.push({
+                            length: len,
+                            pattern: history.slice(-len),
+                            confidence: matchRate
+                        });
+                    }
+                }
+                
+                return cycles.sort((a, b) => b.confidence - a.confidence);
+            }
+        }
+
+        // Lớp phân tích xu hướng độc lập
+        class TrendAnalyzer {
+            constructor() {
+                this.analysisRecords = [];
+            }
+
+            // Xác định trường hợp hiện tại
+            determineCase(probabilities) {
+                const { P, B, T } = probabilities;
+                const sorted = [
+                    { type: 'P', value: P },
+                    { type: 'B', value: B },
+                    { type: 'T', value: T }
+                ].sort((a, b) => b.value - a.value);
+
+                // Kiểm tra trường hợp 4: Tỉ lệ cân bằng (chênh lệch < 5%)
+                const maxDiff = sorted[0].value - sorted[2].value;
+                if (maxDiff < 5) {
+                    return 'case4';
+                }
+
+                // Kiểm tra trường hợp 2: Hòa lớn nhất
+                if (sorted[0].type === 'T') {
+                    return 'case2';
+                }
+
+                // Kiểm tra trường hợp 3: Hòa nhỏ nhất
+                if (sorted[2].type === 'T') {
+                    return 'case3';
+                }
+
+                // Kiểm tra trường hợp 1: Cao > Trung > Thấp (Hòa ở giữa)
+                if (sorted[1].type === 'T') {
+                    return 'case1';
+                }
+
+                // Mặc định về case 1 nếu không xác định được
+                return 'case1';
+            }
+
+            // Ghi nhận kết quả
+            recordResult(probabilities, actualResult) {
+                const caseType = this.determineCase(probabilities);
+                
+                // Xác định thứ tự cao/giữa/thấp
+                const sorted = [
+                    { type: 'P', value: probabilities.P },
+                    { type: 'B', value: probabilities.B },
+                    { type: 'T', value: probabilities.T }
+                ].sort((a, b) => b.value - a.value);
+                
+                const highType = sorted[0].type;
+                const midType = sorted[1].type;
+                const lowType = sorted[2].type;
+                
+                // Lưu thông tin cho phân tích độ chính xác
+                if (predictionAccuracy[caseType]) {
+                    // Kiểm tra xem kết quả thực tế thuộc loại nào
+                    if (actualResult === highType) {
+                        predictionAccuracy[caseType].high.push(1); // Dự đoán cao nhất đúng
+                    } else {
+                        predictionAccuracy[caseType].high.push(0); // Dự đoán cao nhất sai
+                    }
+                    
+                    if (actualResult === midType) {
+                        predictionAccuracy[caseType].mid.push(1); // Giữa về
+                    } else {
+                        predictionAccuracy[caseType].mid.push(0);
+                    }
+                    
+                    if (actualResult === lowType) {
+                        predictionAccuracy[caseType].low.push(1); // Thấp nhất về
+                    } else {
+                        predictionAccuracy[caseType].low.push(0);
+                    }
+                }
+                
+                const record = {
+                    probabilities,
+                    predicted: this.getPredictedResult(probabilities),
+                    actual: actualResult,
+                    caseType,
+                    highType,
+                    midType,
+                    lowType,
+                    timestamp: Date.now()
+                };
+
+                this.analysisRecords.push(record);
+                
+                // Cập nhật thống kê
+                if (trendStatistics[caseType]) {
+                    trendStatistics[caseType][actualResult]++;
+                    trendStatistics[caseType].total++;
+                }
+
+                return record;
+            }
+
+            // Lấy kết quả dự đoán (tỉ lệ cao nhất)
+            getPredictedResult(probabilities) {
+                const { P, B, T } = probabilities;
+                if (P >= B && P >= T) return 'P';
+                if (B >= P && B >= T) return 'B';
+                return 'T';
+            }
+
+            // Phân tích xu hướng cho từng trường hợp
+            analyzeTrends() {
+                const trends = {};
+                
+                for (let caseType in trendStatistics) {
+                    const stats = trendStatistics[caseType];
+                    if (stats.total === 0) {
+                        trends[caseType] = { trend: 'none', confidence: 0 };
+                        continue;
+                    }
+
+                    const rates = {
+                        P: stats.P / stats.total,
+                        B: stats.B / stats.total,
+                        T: stats.T / stats.total
+                    };
+
+                    // Xác định xu hướng
+                    const maxRate = Math.max(rates.P, rates.B, rates.T);
+                    let trend = 'none';
+                    
+                    if (maxRate === rates.P) trend = 'P';
+                    else if (maxRate === rates.B) trend = 'B';
+                    else if (maxRate === rates.T) trend = 'T';
+
+                    trends[caseType] = {
+                        trend,
+                        confidence: maxRate,
+                        rates
+                    };
+                }
+
+                return trends;
+            }
+
+            // Đưa ra đề xuất dựa trên xu hướng
+            getRecommendation(probabilities) {
+                const caseType = this.determineCase(probabilities);
+                const trends = this.analyzeTrends();
+                
+                if (!trends[caseType] || trends[caseType].trend === 'none') {
+                    return {
+                        recommendation: null,
+                        confidence: 0,
+                        reason: 'Chưa đủ dữ liệu'
+                    };
+                }
+
+                const trend = trends[caseType];
+                return {
+                    recommendation: trend.trend,
+                    confidence: trend.confidence,
+                    caseType,
+                    reason: `Dựa trên ${trendStatistics[caseType].total} lần phân tích ${this.getCaseDescription(caseType)}`
+                };
+            }
+
+            getCaseDescription(caseType) {
+                switch(caseType) {
+                    case 'case1': return 'Cao > Trung > Thấp';
+                    case 'case2': return 'Hòa lớn nhất';
+                    case 'case3': return 'Hòa nhỏ nhất';
+                    case 'case4': return 'Tỉ lệ cân bằng';
+                    default: return '';
+                }
+            }
+        }
+
+        // Khởi tạo các analyzer
+        const analyzer = new BaccaratAnalyzer();
+        const trendAnalyzer = new TrendAnalyzer();
+        let lastPrediction = null;
+
+        // Các hàm giao diện
+        function addResult(result) {
+            // Ghi nhận kết quả cho hệ thống xu hướng nếu có dự đoán trước đó
+            if (lastPrediction && ['P', 'B', 'T'].includes(result)) {
+                trendAnalyzer.recordResult(lastPrediction, result);
+                
+                // Kiểm tra đề xuất đúng/sai
+                if (lastRecommendation) {
+                    const { recommendation, caseType } = lastRecommendation;
+                    if (recommendation && recommendationStats[caseType]) {
+                        if (result === recommendation) {
+                            recommendationStats[caseType].correct++;
+                        } else {
+                            recommendationStats[caseType].wrong++;
+                        }
+                    }
+                }
+                
+                updateTrendAnalysisDisplay();
+            }
+
+            gameHistory.push(result);
+            updateDisplay();
+            analyzeAndPredict();
+        }
+
+        function clearHistory() {
+            gameHistory = [];
+            trendAnalysisHistory = [];
+            trendStatistics = {
+                case1: { P: 0, B: 0, T: 0, total: 0 },
+                case2: { P: 0, B: 0, T: 0, total: 0 },
+                case3: { P: 0, B: 0, T: 0, total: 0 },
+                case4: { P: 0, B: 0, T: 0, total: 0 }
+            };
+            predictionAccuracy = {
+                case1: { high: [], mid: [], low: [] },
+                case2: { high: [], mid: [], low: [] },
+                case3: { high: [], mid: [], low: [] },
+                case4: { high: [], mid: [], low: [] }
+            };
+            recommendationStats = {
+                case1: { correct: 0, wrong: 0 },
+                case2: { correct: 0, wrong: 0 },
+                case3: { correct: 0, wrong: 0 },
+                case4: { correct: 0, wrong: 0 }
+            };
+            lastPrediction = null;
+            lastRecommendation = null;
+            updateDisplay();
+            analyzeAndPredict();
+            updateTrendAnalysisDisplay();
+            updateRecommendationStats();
+        }
+
+        function undoLast() {
+            if (gameHistory.length > 0) {
+                gameHistory.pop();
+                updateDisplay();
+                analyzeAndPredict();
+            }
+        }
+
+        function generateRandom() {
+            const options = ['P', 'B', 'T'];
+            for (let i = 0; i < 20; i++) {
+                const random = options[Math.floor(Math.random() * options.length)];
+                
+                // Ghi nhận cho hệ thống xu hướng
+                if (lastPrediction) {
+                    trendAnalyzer.recordResult(lastPrediction, random);
+                    
+                    // Kiểm tra đề xuất đúng/sai
+                    if (lastRecommendation) {
+                        const { recommendation, caseType } = lastRecommendation;
+                        if (recommendation && recommendationStats[caseType]) {
+                            if (random === recommendation) {
+                                recommendationStats[caseType].correct++;
+                            } else {
+                                recommendationStats[caseType].wrong++;
+                            }
+                        }
+                    }
+                }
+                
+                gameHistory.push(random);
+                
+                // Tạo dự đoán mới cho vòng tiếp theo
+                const mainResults = gameHistory.filter(r => ['P', 'B', 'T'].includes(r));
+                if (mainResults.length >= 3) {
+                    lastPrediction = analyzer.predict(mainResults);
+                    lastRecommendation = trendAnalyzer.getRecommendation(lastPrediction);
+                }
+            }
+            updateDisplay();
+            analyzeAndPredict();
+            updateTrendAnalysisDisplay();
+        }
+
+        function updateDisplay() {
+            // Cập nhật lịch sử với màu sắc
+            const historyDiv = document.getElementById('historyDisplay');
+            historyDiv.innerHTML = gameHistory.map((result, index) => {
+                let className = '';
+                let text = '';
+                
+                switch(result) {
+                    case 'P': 
+                        className = 'player-history'; 
+                        text = 'Con'; 
+                        break;
+                    case 'B': 
+                        className = 'banker-history'; 
+                        text = 'Cái'; 
+                        break;
+                    case 'T': 
+                        className = 'tie-history'; 
+                        text = 'Hòa'; 
+                        break;
+                    case 'PP': 
+                        className = 'btn-pair'; 
+                        text = 'Đôi Con'; 
+                        break;
+                    case 'BP': 
+                        className = 'btn-pair'; 
+                        text = 'Đôi Cái'; 
+                        break;
+                }
+                
+                return `<span class="history-item ${className}">${index + 1}. ${text}</span>`;
+            }).join('');
+
+            // Cập nhật thống kê
+            updateStatistics();
+            
+            // Cập nhật bảng cầu
+            updateRoadmaps();
+        }
+
+        function updateStatistics() {
+            const mainResults = gameHistory.filter(r => ['P', 'B', 'T'].includes(r));
+            const total = mainResults.length;
+            
+            const counts = { P: 0, B: 0, T: 0 };
+            mainResults.forEach(r => counts[r]++);
+            
+            document.getElementById('totalGames').textContent = total;
+            document.getElementById('playerRate').textContent = total > 0 ? 
+                (counts.P / total * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('bankerRate').textContent = total > 0 ? 
+                (counts.B / total * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('tieRate').textContent = total > 0 ? 
+                (counts.T / total * 100).toFixed(1) + '%' : '0%';
+            
+            // Cập nhật chuỗi hiện tại
+            if (mainResults.length > 0) {
+                let streak = 1;
+                const lastResult = mainResults[mainResults.length - 1];
+                for (let i = mainResults.length - 2; i >= 0; i--) {
+                    if (mainResults[i] === lastResult) {
+                        streak++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                const streakText = lastResult === 'P' ? 'Con' : 
+                                  lastResult === 'B' ? 'Cái' : 'Hòa';
+                const streakColor = lastResult === 'P' ? '#007bff' : 
+                                    lastResult === 'B' ? '#dc3545' : '#28a745';
+                                    
+                document.getElementById('currentStreak').innerHTML = 
+                    `<span style="color: ${streakColor}">${streak} ${streakText}</span>`;
+            }
+        }
+
+        function updateRoadmaps() {
+            const mainRoad = document.getElementById('mainRoadmap');
+            const derivedRoad = document.getElementById('derivedRoadmap');
+            
+            // Bảng cầu chính
+            mainRoad.innerHTML = gameHistory
+                .filter(r => ['P', 'B', 'T'].includes(r))
+                .slice(-50)
+                .map(r => {
+                    const className = r === 'P' ? 'player' : 
+                                     r === 'B' ? 'banker' : 'tie';
+                    return `<div class="road-cell ${className}">${r}</div>`;
+                }).join('');
+            
+            // Bảng cầu phụ (Big Eye Boy)
+            const derivedPattern = generateDerivedRoad(gameHistory);
+            derivedRoad.innerHTML = derivedPattern
+                .slice(-50)
+                .map(r => {
+                    const className = r === 'R' ? 'banker' : 'player';
+                    return `<div class="road-cell ${className}">${r === 'R' ? '●' : '○'}</div>`;
+                }).join('');
+        }
+
+        function generateDerivedRoad(history) {
+            // Simplified Big Eye Boy logic
+            const derived = [];
+            const mainResults = history.filter(r => ['P', 'B'].includes(r));
+            
+            for (let i = 2; i < mainResults.length; i++) {
+                if (mainResults[i] === mainResults[i-1]) {
+                    derived.push('R'); // Red
+                } else {
+                    derived.push('B'); // Blue
+                }
+            }
+            
+            return derived;
+        }
+
+        function analyzeAndPredict() {
+            const mainResults = gameHistory.filter(r => ['P', 'B', 'T'].includes(r));
+            
+            if (mainResults.length < 3) {
+                resetPredictions();
+                return;
+            }
+            
+            // Lấy dự đoán từ analyzer
+            const prediction = analyzer.predict(mainResults);
+            lastPrediction = prediction; // Lưu dự đoán để phân tích xu hướng
+            
+            // Cập nhật giao diện dự đoán
+            updatePredictionDisplay(prediction);
+            
+            // Phân tích mẫu
+            const patterns = analyzer.detectComplexPatterns(mainResults);
+            updatePatternDisplay(patterns);
+            
+            // Phân tích cầu chuyên sâu
+            updateAdvancedPatternDetection(mainResults);
+            
+            // Phát hiện chu kỳ
+            const cycles = analyzer.cycleAnalyzer.findCycles(mainResults);
+            updateCycleDisplay(cycles);
+            
+            // Cập nhật metrics nâng cao
+            updateAdvancedMetrics(mainResults);
+            
+            // Cập nhật Advanced Analytics mới
+            updateAdvancedAnalytics(mainResults, prediction);
+            
+            // Cập nhật đề xuất xu hướng
+            updateTrendRecommendation(prediction);
+            
+            // Cập nhật thống kê đề xuất
+            updateRecommendationStats();
+        }
+        
+        function updateAdvancedPatternDetection(history) {
+            // Phát hiện các loại cầu
+            const detectedPatterns = analyzer.patternRecognizer.detectAllPatterns(history);
+            
+            // Reset tất cả pattern cards
+            const patternTypes = ['dragon', 'pingpong', 'pattern1212', 'pattern123', 'pattern22', 'zigzag'];
+            patternTypes.forEach(type => {
+                const card = document.getElementById(type + 'Pattern') || document.getElementById(type + 'Card');
+                if (card) {
+                    card.classList.remove('active');
+                    document.getElementById(type + 'Status').textContent = 'Chờ';
+                    document.getElementById(type + 'Confidence').textContent = '0%';
+                    document.getElementById(type + 'Strength').style.width = '0%';
+                }
+            });
+            
+            // Hiển thị pattern alert nếu có phát hiện
+            const alertDiv = document.getElementById('patternAlert');
+            const alertContent = document.getElementById('patternAlertContent');
+            
+            if (detectedPatterns.length > 0) {
+                alertDiv.style.display = 'block';
+                
+                // Cập nhật từng pattern được phát hiện
+                detectedPatterns.forEach(pattern => {
+                    let cardId = '';
+                    switch(pattern.type) {
+                        case 'dragon': cardId = 'dragonPattern'; break;
+                        case 'pingpong': cardId = 'pingpongPattern'; break;
+                        case 'pattern1212': cardId = 'pattern1212Card'; break;
+                        case 'pattern123': cardId = 'pattern123Card'; break;
+                        case 'pattern22': cardId = 'pattern22Card'; break;
+                        case 'zigzag': cardId = 'zigzagCard'; break;
+                        case 'complex': cardId = 'complexCard'; break;
+                    }
+                    
+                    if (cardId && document.getElementById(cardId)) {
+                        const card = document.getElementById(cardId);
+                        card.classList.add('active');
+                        
+                        const statusId = pattern.type + 'Status';
+                        const confidenceId = pattern.type + 'Confidence';
+                        const strengthId = pattern.type + 'Strength';
+                        
+                        if (document.getElementById(statusId)) {
+                            const predText = pattern.prediction === 'P' ? 'CON' : 'CÁI';
+                            document.getElementById(statusId).textContent = `Phát hiện → ${predText}`;
+                            document.getElementById(statusId).style.color = pattern.prediction === 'P' ? '#007bff' : '#dc3545';
+                        }
+                        
+                        if (document.getElementById(confidenceId)) {
+                            document.getElementById(confidenceId).textContent = (pattern.confidence * 100).toFixed(0) + '%';
+                        }
+                        
+                        if (document.getElementById(strengthId)) {
+                            document.getElementById(strengthId).style.width = (pattern.strength * 100) + '%';
+                        }
+                    }
+                });
+                
+                // Hiển thị pattern mạnh nhất
+                const bestPattern = detectedPatterns[0];
+                alertContent.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5em;">${bestPattern.icon}</span>
+                        <div>
+                            <strong>${bestPattern.name}</strong> được phát hiện!<br>
+                            <span style="color: #ffd700;">Độ tin cậy: ${(bestPattern.confidence * 100).toFixed(0)}%</span>
+                            <span style="margin-left: 15px; color: ${bestPattern.prediction === 'P' ? '#007bff' : '#dc3545'};">
+                                Dự đoán: <strong>${bestPattern.prediction === 'P' ? 'CON' : 'CÁI'}</strong>
+                            </span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                alertDiv.style.display = 'none';
+            }
+            
+            // Cập nhật tổng hợp
+            const summaryDiv = document.getElementById('patternSummary');
+            if (detectedPatterns.length > 0) {
+                summaryDiv.innerHTML = analyzer.patternRecognizer.generatePatternReport();
+            } else {
+                summaryDiv.innerHTML = '<span style="color: #888;">Chưa phát hiện cầu đặc biệt. Cần thêm dữ liệu...</span>';
+            }
+        }
+        
+        function updateAdvancedAnalytics(history, currentPrediction) {
+            // Update Bayesian
+            const bayesianPred = analyzer.bayesianModel.update(history);
+            document.getElementById('bayesianP').textContent = bayesianPred.P.toFixed(1) + '%';
+            document.getElementById('bayesianB').textContent = bayesianPred.B.toFixed(1) + '%';
+            document.getElementById('bayesianT').textContent = bayesianPred.T.toFixed(1) + '%';
+            
+            // Update LSTM
+            const lstmPred = analyzer.lstmSimulator.predict(history);
+            const maxLSTM = Math.max(lstmPred.P, lstmPred.B, lstmPred.T);
+            let lstmChoice = 'Con';
+            if (maxLSTM === lstmPred.B) lstmChoice = 'Cái';
+            else if (maxLSTM === lstmPred.T) lstmChoice = 'Hòa';
+            document.getElementById('lstmPrediction').textContent = lstmChoice;
+            document.getElementById('lstmConfidence').textContent = maxLSTM.toFixed(1) + '%';
+            
+            // Update Hot/Cold
+            const hotColdAnalysis = analyzer.hotColdAnalyzer.analyze(history);
+            const hotText = hotColdAnalysis.hot.map(h => h === 'P' ? 'Con' : h === 'B' ? 'Cái' : 'Hòa').join(', ') || 'Không';
+            const coldText = hotColdAnalysis.cold.map(c => c === 'P' ? 'Con' : c === 'B' ? 'Cái' : 'Hòa').join(', ') || 'Không';
+            document.getElementById('hotNumbers').textContent = hotText;
+            document.getElementById('coldNumbers').textContent = coldText;
+            
+            if (hotColdAnalysis.suggestion.target) {
+                const suggestionText = hotColdAnalysis.suggestion.target === 'P' ? 'Con' : 
+                                     hotColdAnalysis.suggestion.target === 'B' ? 'Cái' : 'Hòa';
+                document.getElementById('hotColdSuggestion').textContent = suggestionText;
+            } else {
+                document.getElementById('hotColdSuggestion').textContent = 'Chờ';
+            }
+            
+            // Update Shoe Tracking
+            const shoeInfo = analyzer.shoeTracker.update(history.length);
+            document.getElementById('shoePenetration').textContent = shoeInfo.penetration.toFixed(1) + '%';
+            document.getElementById('remainingDecks').textContent = shoeInfo.remainingDecks;
+            const reliability = (100 * analyzer.shoeTracker.getPenetrationFactor()).toFixed(0);
+            document.getElementById('shoeReliability').textContent = reliability + '%';
+            
+            // Update Kelly Criterion
+            const maxProb = Math.max(currentPrediction.P, currentPrediction.B, currentPrediction.T) / 100;
+            const kellyCalc = analyzer.kellyCalculator.calculate(maxProb);
+            document.getElementById('kellyPercent').textContent = kellyCalc.percent + '%';
+            document.getElementById('kellyAmount').textContent = '
+
+        function updatePredictionDisplay(prediction) {
+            // Cập nhật xác suất
+            document.getElementById('playerProb').textContent = 
+                prediction.P.toFixed(1) + '%';
+            document.getElementById('bankerProb').textContent = 
+                prediction.B.toFixed(1) + '%';
+            document.getElementById('tieProb').textContent = 
+                prediction.T.toFixed(1) + '%';
+            
+            // Cập nhật thanh confidence
+            document.getElementById('playerConfBar').style.width = 
+                prediction.P + '%';
+            document.getElementById('bankerConfBar').style.width = 
+                prediction.B + '%';
+            document.getElementById('tieConfBar').style.width = 
+                prediction.T + '%';
+            
+            // Highlight recommendation
+            const cards = document.querySelectorAll('.prediction-card');
+            cards.forEach(card => card.classList.remove('recommended'));
+            
+            const max = Math.max(prediction.P, prediction.B, prediction.T);
+            if (max === prediction.P && prediction.P > 40) {
+                document.getElementById('predPlayer').classList.add('recommended');
+            } else if (max === prediction.B && prediction.B > 40) {
+                document.getElementById('predBanker').classList.add('recommended');
+            } else if (max === prediction.T && prediction.T > 40) {
+                document.getElementById('predTie').classList.add('recommended');
+            }
+        }
+
+        function updateTrendAnalysisDisplay() {
+            // Cập nhật thống kê cho từng trường hợp
+            for (let i = 1; i <= 4; i++) {
+                const caseKey = `case${i}`;
+                const stats = trendStatistics[caseKey];
+                
+                // Cập nhật số lượng
+                document.getElementById(`${caseKey}Player`).textContent = 
+                    `${stats.P}/${stats.total}`;
+                document.getElementById(`${caseKey}Banker`).textContent = 
+                    `${stats.B}/${stats.total}`;
+                document.getElementById(`${caseKey}Tie`).textContent = 
+                    `${stats.T}/${stats.total}`;
+                
+                // Tính và cập nhật tỉ lệ thắng
+                if (stats.total > 0) {
+                    const rates = {
+                        P: (stats.P / stats.total * 100).toFixed(1),
+                        B: (stats.B / stats.total * 100).toFixed(1),
+                        T: (stats.T / stats.total * 100).toFixed(1)
+                    };
+                    
+                    document.getElementById(`${caseKey}PlayerRate`).textContent = `${rates.P}%`;
+                    document.getElementById(`${caseKey}BankerRate`).textContent = `${rates.B}%`;
+                    document.getElementById(`${caseKey}TieRate`).textContent = `${rates.T}%`;
+                    
+                    // Xác định cao nhất, thấp nhất
+                    const sorted = [
+                        { type: 'P', value: parseFloat(rates.P), element: `${caseKey}PlayerStat` },
+                        { type: 'B', value: parseFloat(rates.B), element: `${caseKey}BankerStat` },
+                        { type: 'T', value: parseFloat(rates.T), element: `${caseKey}TieStat` }
+                    ].sort((a, b) => b.value - a.value);
+                    
+                    // Reset classes
+                    document.getElementById(`${caseKey}PlayerStat`).classList.remove('highest-rate', 'lowest-rate');
+                    document.getElementById(`${caseKey}BankerStat`).classList.remove('highest-rate', 'lowest-rate');
+                    document.getElementById(`${caseKey}TieStat`).classList.remove('highest-rate', 'lowest-rate');
+                    
+                    // Add highest và lowest classes
+                    document.getElementById(sorted[0].element).classList.add('highest-rate');
+                    document.getElementById(sorted[2].element).classList.add('lowest-rate');
+                    
+                    // Cập nhật summary
+                    const typeNames = { P: 'Con', B: 'Cái', T: 'Hòa' };
+                    document.getElementById(`${caseKey}Highest`).textContent = 
+                        `${typeNames[sorted[0].type]} (${sorted[0].value}%)`;
+                    document.getElementById(`${caseKey}Middle`).textContent = 
+                        `${typeNames[sorted[1].type]} (${sorted[1].value}%)`;
+                    document.getElementById(`${caseKey}Lowest`).textContent = 
+                        `${typeNames[sorted[2].type]} (${sorted[2].value}%)`;
+                    
+                    // PHẦN MỚI: Tính và hiển thị độ chính xác dự đoán
+                    if (predictionAccuracy[caseKey]) {
+                        const accuracy = predictionAccuracy[caseKey];
+                        
+                        // Tính % cho dự đoán cao nhất
+                        if (accuracy.high.length > 0) {
+                            const highCorrect = accuracy.high.filter(x => x === 1).length;
+                            const highPercent = (highCorrect / accuracy.high.length * 100).toFixed(1);
+                            const highElement = document.getElementById(`${caseKey}HighAccuracy`);
+                            highElement.textContent = `${highPercent}%`;
+                            
+                            // Đổi màu theo độ chính xác
+                            highElement.classList.remove('good', 'medium', 'bad');
+                            if (parseFloat(highPercent) >= 50) {
+                                highElement.classList.add('good');
+                            } else if (parseFloat(highPercent) >= 33) {
+                                highElement.classList.add('medium');
+                            } else {
+                                highElement.classList.add('bad');
+                            }
+                        }
+                        
+                        // Tính % cho dự đoán giữa
+                        if (accuracy.mid.length > 0) {
+                            const midCorrect = accuracy.mid.filter(x => x === 1).length;
+                            const midPercent = (midCorrect / accuracy.mid.length * 100).toFixed(1);
+                            const midElement = document.getElementById(`${caseKey}MidAccuracy`);
+                            midElement.textContent = `${midPercent}%`;
+                            
+                            midElement.classList.remove('good', 'medium', 'bad');
+                            if (parseFloat(midPercent) >= 33) {
+                                midElement.classList.add('bad'); // Giữa về nhiều là không tốt
+                            } else {
+                                midElement.classList.add('medium');
+                            }
+                        }
+                        
+                        // Tính % cho dự đoán thấp nhất  
+                        if (accuracy.low.length > 0) {
+                            const lowCorrect = accuracy.low.filter(x => x === 1).length;
+                            const lowPercent = (lowCorrect / accuracy.low.length * 100).toFixed(1);
+                            const lowElement = document.getElementById(`${caseKey}LowAccuracy`);
+                            lowElement.textContent = `${lowPercent}%`;
+                            
+                            lowElement.classList.remove('good', 'medium', 'bad');
+                            if (parseFloat(lowPercent) <= 20) {
+                                lowElement.classList.add('good'); // Thấp ít về là tốt
+                            } else if (parseFloat(lowPercent) <= 33) {
+                                lowElement.classList.add('medium');
+                            } else {
+                                lowElement.classList.add('bad'); // Thấp về nhiều là xấu
+                            }
+                        }
+                    }
+                } else {
+                    // Reset khi chưa có data
+                    document.getElementById(`${caseKey}PlayerRate`).textContent = '0%';
+                    document.getElementById(`${caseKey}BankerRate`).textContent = '0%';
+                    document.getElementById(`${caseKey}TieRate`).textContent = '0%';
+                    document.getElementById(`${caseKey}Highest`).textContent = '-';
+                    document.getElementById(`${caseKey}Middle`).textContent = '-';
+                    document.getElementById(`${caseKey}Lowest`).textContent = '-';
+                    document.getElementById(`${caseKey}HighAccuracy`).textContent = '--%';
+                    document.getElementById(`${caseKey}MidAccuracy`).textContent = '--%';
+                    document.getElementById(`${caseKey}LowAccuracy`).textContent = '--%';
+                }
+            }
+            
+            // Cập nhật tổng thống kê
+            const totalAnalyzed = Object.values(trendStatistics)
+                .reduce((sum, stats) => sum + stats.total, 0);
+            document.getElementById('totalAnalyzed').textContent = totalAnalyzed;
+            
+            // Tính toán dự đoán đúng
+            let correctCount = 0;
+            trendAnalyzer.analysisRecords.forEach(record => {
+                if (record.predicted === record.actual) correctCount++;
+            });
+            document.getElementById('correctPredictions').textContent = correctCount;
+            
+            // Độ chính xác
+            const accuracy = totalAnalyzed > 0 ? 
+                (correctCount / totalAnalyzed * 100).toFixed(1) : 0;
+            const accuracyElement = document.getElementById('trendAccuracy');
+            accuracyElement.textContent = `${accuracy}%`;
+            
+            // Trường hợp phổ biến nhất
+            let mostCommon = { case: '-', count: 0 };
+            for (let caseKey in trendStatistics) {
+                if (trendStatistics[caseKey].total > mostCommon.count) {
+                    mostCommon = {
+                        case: caseKey,
+                        count: trendStatistics[caseKey].total
+                    };
+                }
+            }
+            
+            const caseNames = {
+                case1: 'TH1',
+                case2: 'TH2',
+                case3: 'TH3',
+                case4: 'TH4'
+            };
+            document.getElementById('mostCommonCase').textContent = 
+                mostCommon.count > 0 ? caseNames[mostCommon.case] : '-';
+            
+            // Xu hướng mạnh nhất
+            const trends = trendAnalyzer.analyzeTrends();
+            let strongestTrend = { trend: '-', confidence: 0 };
+            for (let caseKey in trends) {
+                if (trends[caseKey].confidence > strongestTrend.confidence) {
+                    strongestTrend = {
+                        trend: trends[caseKey].trend,
+                        confidence: trends[caseKey].confidence,
+                        case: caseKey
+                    };
+                }
+            }
+            
+            if (strongestTrend.confidence > 0) {
+                const trendName = strongestTrend.trend === 'P' ? 'Con' :
+                                 strongestTrend.trend === 'B' ? 'Cái' : 'Hòa';
+                document.getElementById('strongestTrend').textContent = 
+                    `${trendName} (${(strongestTrend.confidence * 100).toFixed(0)}%)`;
+            }
+            
+            // Cập nhật thống kê đề xuất
+            updateRecommendationStats();
+        }
+
+        function updateTrendRecommendation(prediction) {
+            const recommendation = trendAnalyzer.getRecommendation(prediction);
+            const recDiv = document.getElementById('trendRecommendation');
+            
+            // Lưu lại recommendation hiện tại
+            lastRecommendation = recommendation;
+            
+            if (!recommendation.recommendation) {
+                recDiv.innerHTML = '<div style="color: #ccc;">Đang thu thập dữ liệu...</div>';
+                return;
+            }
+            
+            // Xác định trường hợp hiện tại
+            const currentCase = trendAnalyzer.determineCase(prediction);
+            const caseDescriptions = {
+                case1: 'Trường hợp 1: Cao > Trung > Thấp',
+                case2: 'Trường hợp 2: Hòa lớn nhất',
+                case3: 'Trường hợp 3: Hòa nhỏ nhất',
+                case4: 'Trường hợp 4: Tỉ lệ cân bằng'
+            };
+            
+            // Cập nhật status
+            const statusElement = document.getElementById('trendStatus');
+            statusElement.textContent = caseDescriptions[currentCase];
+            statusElement.style.background = 'linear-gradient(135deg, #ffd700, #ff8c00)';
+            
+            // Hiển thị đề xuất
+            let recHTML = '';
+            const options = ['P', 'B', 'T'];
+            options.forEach(opt => {
+                const isRecommended = opt === recommendation.recommendation;
+                const className = opt === 'P' ? 'player-rec' :
+                                opt === 'B' ? 'banker-rec' : 'tie-rec';
+                const text = opt === 'P' ? 'CON' :
+                           opt === 'B' ? 'CÁI' : 'HÒA';
+                const highlightClass = isRecommended ? 'highlighted' : '';
+                
+                recHTML += `
+                    <div class="rec-option ${className} ${highlightClass}">
+                        ${text}
+                        ${isRecommended ? '<br><small>Đề xuất</small>' : ''}
+                    </div>
+                `;
+            });
+            
+            recDiv.innerHTML = recHTML;
+            
+            // Cập nhật độ chính xác
+            const accuracyElement = document.getElementById('trendAccuracy');
+            if (trendAnalyzer.analysisRecords.length > 0) {
+                let correct = 0;
+                trendAnalyzer.analysisRecords.forEach(record => {
+                    if (record.predicted === record.actual) correct++;
+                });
+                const accuracy = (correct / trendAnalyzer.analysisRecords.length * 100).toFixed(1);
+                accuracyElement.textContent = `${accuracy}%`;
+            }
+            
+            // Cập nhật thống kê đề xuất
+            updateRecommendationStats();
+        }
+        
+        function updateRecommendationStats() {
+            // Cập nhật thống kê cho từng trường hợp
+            for (let i = 1; i <= 4; i++) {
+                const caseKey = `case${i}`;
+                const stats = recommendationStats[caseKey];
+                
+                // Cập nhật số lần đúng/sai
+                document.getElementById(`${caseKey}RecCorrect`).textContent = stats.correct;
+                document.getElementById(`${caseKey}RecWrong`).textContent = stats.wrong;
+                
+                // Tính tỉ lệ
+                const total = stats.correct + stats.wrong;
+                if (total > 0) {
+                    const rate = ((stats.correct / total) * 100).toFixed(1);
+                    const rateElement = document.getElementById(`${caseKey}RecRate`);
+                    rateElement.textContent = `${rate}%`;
+                    
+                    // Đổi màu theo tỉ lệ
+                    rateElement.classList.remove('correct', 'wrong', 'rate');
+                    if (parseFloat(rate) >= 60) {
+                        rateElement.classList.add('correct');
+                    } else if (parseFloat(rate) <= 40) {
+                        rateElement.classList.add('wrong');
+                    } else {
+                        rateElement.classList.add('rate');
+                    }
+                } else {
+                    document.getElementById(`${caseKey}RecRate`).textContent = '--%';
+                }
+            }
+        }
+
+        function updatePatternDisplay(patterns) {
+            const patternList = document.getElementById('patternList');
+            
+            if (patterns.length === 0) {
+                patternList.innerHTML = '<div class="pattern-item">Chưa phát hiện mẫu lặp</div>';
+                return;
+            }
+            
+            const topPatterns = patterns
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 5);
+            
+            patternList.innerHTML = topPatterns.map(p => `
+                <div class="pattern-item">
+                    <span>Mẫu: ${p.pattern} (${p.type})</span>
+                    <span>Độ tin cậy: ${(p.confidence * 100).toFixed(0)}%</span>
+                </div>
+            `).join('');
+        }
+
+        function updateCycleDisplay(cycles) {
+            const cycleText = document.getElementById('cycleDetected');
+            
+            if (cycles.length > 0) {
+                const bestCycle = cycles[0];
+                cycleText.textContent = `Chu kỳ ${bestCycle.length} ván (${(bestCycle.confidence * 100).toFixed(0)}%)`;
+            } else {
+                cycleText.textContent = 'Chưa phát hiện';
+            }
+        }
+
+        function updateAdvancedMetrics(history) {
+            const metricsDiv = document.getElementById('advancedMetrics');
+            
+            // Tính các chỉ số nâng cao
+            const metrics = {
+                volatility: calculateVolatility(history),
+                entropy: calculateEntropy(history),
+                autocorrelation: calculateAutocorrelation(history),
+                runTest: performRunTest(history),
+                chiSquare: performChiSquareTest(history)
+            };
+            
+            metricsDiv.innerHTML = `
+                <div class="pattern-item">
+                    <span>Độ biến động:</span>
+                    <span>${metrics.volatility.toFixed(2)}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Entropy:</span>
+                    <span>${metrics.entropy.toFixed(3)}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Tự tương quan:</span>
+                    <span>${metrics.autocorrelation.toFixed(3)}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Run Test:</span>
+                    <span>${metrics.runTest}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Chi-Square:</span>
+                    <span>${metrics.chiSquare.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        function calculateVolatility(history) {
+            if (history.length < 2) return 0;
+            
+            let changes = 0;
+            for (let i = 1; i < history.length; i++) {
+                if (history[i] !== history[i-1]) changes++;
+            }
+            
+            return changes / (history.length - 1);
+        }
+
+        function calculateEntropy(history) {
+            const counts = {};
+            history.forEach(h => {
+                counts[h] = (counts[h] || 0) + 1;
+            });
+            
+            let entropy = 0;
+            const total = history.length;
+            
+            for (let key in counts) {
+                const p = counts[key] / total;
+                if (p > 0) {
+                    entropy -= p * Math.log2(p);
+                }
+            }
+            
+            return entropy;
+        }
+
+        function calculateAutocorrelation(history, lag = 1) {
+            if (history.length < lag + 1) return 0;
+            
+            const values = history.map(h => h === 'P' ? 1 : h === 'B' ? -1 : 0);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            
+            let numerator = 0;
+            let denominator = 0;
+            
+            for (let i = 0; i < values.length - lag; i++) {
+                numerator += (values[i] - mean) * (values[i + lag] - mean);
+            }
+            
+            for (let i = 0; i < values.length; i++) {
+                denominator += Math.pow(values[i] - mean, 2);
+            }
+            
+            return denominator === 0 ? 0 : numerator / denominator;
+        }
+
+        function performRunTest(history) {
+            let runs = 1;
+            for (let i = 1; i < history.length; i++) {
+                if (history[i] !== history[i-1]) runs++;
+            }
+            
+            const expected = (2 * history.length - 1) / 3;
+            const zScore = (runs - expected) / Math.sqrt(expected);
+            
+            if (Math.abs(zScore) < 1.96) {
+                return 'Ngẫu nhiên';
+            } else {
+                return zScore > 0 ? 'Quá nhiều thay đổi' : 'Quá ít thay đổi';
+            }
+        }
+
+        function performChiSquareTest(history) {
+            const counts = { P: 0, B: 0, T: 0 };
+            history.forEach(h => {
+                if (counts[h] !== undefined) counts[h]++;
+            });
+            
+            const total = history.length;
+            const expected = total / 3;
+            
+            let chiSquare = 0;
+            for (let key in counts) {
+                chiSquare += Math.pow(counts[key] - expected, 2) / expected;
+            }
+            
+            return chiSquare;
+        }
+
+        function resetPredictions() {
+            document.getElementById('playerProb').textContent = '33.3%';
+            document.getElementById('bankerProb').textContent = '33.3%';
+            document.getElementById('tieProb').textContent = '33.3%';
+            
+            document.getElementById('playerConfBar').style.width = '33.3%';
+            document.getElementById('bankerConfBar').style.width = '33.3%';
+            document.getElementById('tieConfBar').style.width = '33.3%';
+            
+            document.querySelectorAll('.prediction-card')
+                .forEach(card => card.classList.remove('recommended'));
+            
+            // Reset Advanced Analytics
+            document.getElementById('bayesianP').textContent = '--%';
+            document.getElementById('bayesianB').textContent = '--%';
+            document.getElementById('bayesianT').textContent = '--%';
+            document.getElementById('lstmPrediction').textContent = '-';
+            document.getElementById('lstmConfidence').textContent = '--%';
+            document.getElementById('hotNumbers').textContent = '-';
+            document.getElementById('coldNumbers').textContent = '-';
+            document.getElementById('hotColdSuggestion').textContent = '-';
+            document.getElementById('shoePenetration').textContent = '0%';
+            document.getElementById('remainingDecks').textContent = '8.0';
+            document.getElementById('shoeReliability').textContent = '100%';
+            document.getElementById('kellyPercent').textContent = '--%';
+            document.getElementById('kellyAmount').textContent = '$0';
+            document.getElementById('algoConsensus').textContent = '0/5';
+            document.getElementById('overallConfidence').textContent = '--%';
+            document.getElementById('finalDecision').textContent = '-';
+            
+            // Reset Pattern Detection
+            document.getElementById('patternAlert').style.display = 'none';
+            document.getElementById('patternSummary').innerHTML = '<span style="color: #888;">Đang phân tích...</span>';
+            
+            const patternTypes = ['dragon', 'pingpong', 'pattern1212', 'pattern123', 'pattern22', 'zigzag'];
+            patternTypes.forEach(type => {
+                const card = document.getElementById(type + 'Pattern') || document.getElementById(type + 'Card');
+                if (card) {
+                    card.classList.remove('active');
+                }
+                if (document.getElementById(type + 'Status')) {
+                    document.getElementById(type + 'Status').textContent = 'Chờ';
+                }
+                if (document.getElementById(type + 'Confidence')) {
+                    document.getElementById(type + 'Confidence').textContent = '0%';
+                }
+                if (document.getElementById(type + 'Strength')) {
+                    document.getElementById(type + 'Strength').style.width = '0%';
+                }
+            });
+        }
+
+        // Khởi tạo
+        updateDisplay();
+        updateTrendAnalysisDisplay();
+        updateRecommendationStats();
+        resetPredictions();
+    </script>
+</body>
+</html> + kellyCalc.amount;
+            
+            const riskElement = document.getElementById('kellyRisk');
+            riskElement.textContent = kellyCalc.risk === 'low' ? 'Rủi ro Thấp' : 
+                                     kellyCalc.risk === 'medium' ? 'Rủi ro Trung bình' : 'Rủi ro Cao';
+            riskElement.className = 'risk-indicator risk-' + kellyCalc.risk;
+            
+            // Calculate Algorithm Consensus
+            let consensus = 0;
+            const predictions = [
+                { name: 'Markov', pred: analyzer.markovPredict(history) },
+                { name: 'Bayesian', pred: bayesianPred },
+                { name: 'LSTM', pred: lstmPred },
+                { name: 'Pattern', pred: analyzer.patternPredict(history) },
+                { name: 'Statistical', pred: analyzer.statisticalPredict(history) }
+            ];
+            
+            const mainPredMax = Math.max(currentPrediction.P, currentPrediction.B, currentPrediction.T);
+            let mainChoice = 'P';
+            if (mainPredMax === currentPrediction.B) mainChoice = 'B';
+            else if (mainPredMax === currentPrediction.T) mainChoice = 'T';
+            
+            predictions.forEach(p => {
+                if (p.pred) {
+                    const pMax = Math.max(p.pred.P, p.pred.B, p.pred.T);
+                    let pChoice = 'P';
+                    if (pMax === p.pred.B) pChoice = 'B';
+                    else if (pMax === p.pred.T) pChoice = 'T';
+                    
+                    if (pChoice === mainChoice) consensus++;
+                }
+            });
+            
+            document.getElementById('algoConsensus').textContent = consensus + '/5';
+            
+            // Overall Confidence
+            const overallConfidence = (mainPredMax * (consensus / 5) * analyzer.shoeTracker.getPenetrationFactor()).toFixed(1);
+            document.getElementById('overallConfidence').textContent = overallConfidence + '%';
+            
+            // Final Decision
+            const finalText = mainChoice === 'P' ? 'CON' : mainChoice === 'B' ? 'CÁI' : 'HÒA';
+            const finalElement = document.getElementById('finalDecision');
+            finalElement.textContent = finalText;
+            finalElement.style.color = mainChoice === 'P' ? '#007bff' : 
+                                      mainChoice === 'B' ? '#dc3545' : '#28a745';
+            
+            // Generate Smart Strategy
+            generateSmartStrategy(history, currentPrediction, {
+                consensus: consensus,
+                confidence: parseFloat(overallConfidence),
+                hotCold: hotColdAnalysis,
+                shoe: shoeInfo,
+                kelly: kellyCalc,
+                bayesian: bayesianPred,
+                lstm: lstmPred,
+                patterns: analyzer.patternRecognizer.detectedPatterns
+            });
+        }
+        
+        function generateSmartStrategy(history, prediction, analytics) {
+            const strategyDiv = document.getElementById('strategyAlert');
+            const contentDiv = document.getElementById('strategyContent');
+            
+            if (history.length < 10) {
+                strategyDiv.style.display = 'none';
+                return;
+            }
+            
+            strategyDiv.style.display = 'block';
+            
+            let strategy = '';
+            let warnings = [];
+            let recommendations = [];
+            
+            // Phân tích cầu chuyên sâu
+            if (analytics.patterns && analytics.patterns.length > 0) {
+                const bestPattern = analytics.patterns[0];
+                if (bestPattern.confidence > 0.7) {
+                    recommendations.push(`🎯 Phát hiện ${bestPattern.name} với độ tin cậy ${(bestPattern.confidence * 100).toFixed(0)}%`);
+                } else if (bestPattern.confidence > 0.5) {
+                    recommendations.push(`📊 Có dấu hiệu ${bestPattern.name} (${(bestPattern.confidence * 100).toFixed(0)}%)`);
+                }
+            }
+            
+            // Phân tích độ tin cậy
+            if (analytics.confidence > 70) {
+                recommendations.push('✅ Độ tin cậy CAO - Có thể theo đề xuất');
+            } else if (analytics.confidence > 50) {
+                recommendations.push('⚠️ Độ tin cậy TRUNG BÌNH - Cân nhắc kỹ');
+            } else {
+                warnings.push('❌ Độ tin cậy THẤP - Không nên theo đề xuất');
+            }
+            
+            // Phân tích consensus
+            if (analytics.consensus >= 4) {
+                recommendations.push('🎯 Thuật toán đồng thuận cao (' + analytics.consensus + '/5)');
+            } else if (analytics.consensus <= 2) {
+                warnings.push('⚠️ Thuật toán không đồng thuận (' + analytics.consensus + '/5)');
+            }
+            
+            // Phân tích Hot/Cold
+            if (analytics.hotCold.hot.length > 0) {
+                warnings.push('🔥 Có số NÓNG: Cẩn thận có thể nguội');
+            }
+            if (analytics.hotCold.cold.length > 0) {
+                recommendations.push('❄️ Có số LẠNH: Có thể nóng lên');
+            }
+            
+            // Phân tích Shoe
+            if (analytics.shoe.penetration > 70) {
+                warnings.push('👟 Gần hết bộ bài (' + analytics.shoe.penetration.toFixed(0) + '%) - Độ tin cậy giảm');
+            }
+            
+            // Kelly Criterion
+            if (analytics.kelly.risk === 'low') {
+                recommendations.push('💰 Kelly: Rủi ro thấp - Cược ' + analytics.kelly.percent + '% vốn');
+            } else if (analytics.kelly.risk === 'high') {
+                warnings.push('💸 Kelly: Rủi ro cao - Giảm cược xuống');
+            }
+            
+            // Phân tích xu hướng Bayesian vs LSTM
+            const bayesMax = Math.max(analytics.bayesian.P, analytics.bayesian.B, analytics.bayesian.T);
+            const lstmMax = Math.max(analytics.lstm.P, analytics.lstm.B, analytics.lstm.T);
+            
+            let bayesChoice = 'P';
+            if (bayesMax === analytics.bayesian.B) bayesChoice = 'B';
+            else if (bayesMax === analytics.bayesian.T) bayesChoice = 'T';
+            
+            let lstmChoice = 'P';
+            if (lstmMax === analytics.lstm.B) lstmChoice = 'B';
+            else if (lstmMax === analytics.lstm.T) lstmChoice = 'T';
+            
+            if (bayesChoice === lstmChoice) {
+                recommendations.push('🧠 Bayesian & LSTM đồng thuận');
+            } else {
+                warnings.push('🔄 Bayesian & LSTM bất đồng');
+            }
+            
+            // Tạo chiến lược tổng hợp
+            strategy = '<div>';
+            
+            if (warnings.length > 0) {
+                strategy += '<div class="strategy-warning">⚠️ CẢNH BÁO:<br>' + warnings.join('<br>') + '</div><br>';
+            }
+            
+            if (recommendations.length > 0) {
+                strategy += '<div class="strategy-recommendation">✅ ĐỀ XUẤT:<br>' + recommendations.join('<br>') + '</div><br>';
+            }
+            
+            // Kết luận cuối cùng dựa trên cầu và các yếu tố khác
+            const hasStrongPattern = analytics.patterns && analytics.patterns.length > 0 && analytics.patterns[0].confidence > 0.7;
+            
+            if ((analytics.confidence > 60 && analytics.consensus >= 3 && analytics.shoe.penetration < 60) || hasStrongPattern) {
+                strategy += '<div style="font-size: 1.2em; text-align: center; padding: 10px; background: rgba(40, 167, 69, 0.2); border-radius: 8px; margin-top: 10px;">';
+                strategy += '🎯 <strong>QUYẾT ĐỊNH: NÊN THEO ĐỀ XUẤT</strong>';
+                if (hasStrongPattern) {
+                    strategy += `<br><small>Cầu ${analytics.patterns[0].name} đang mạnh!</small>`;
+                }
+                strategy += '</div>';
+            } else if (analytics.confidence < 40 || analytics.shoe.penetration > 75) {
+                strategy += '<div style="font-size: 1.2em; text-align: center; padding: 10px; background: rgba(220, 53, 69, 0.2); border-radius: 8px; margin-top: 10px;">';
+                strategy += '⛔ <strong>QUYẾT ĐỊNH: KHÔNG NÊN CƯỢC HOẶC CƯỢC TỐI THIỂU</strong>';
+                strategy += '</div>';
+            } else {
+                strategy += '<div style="font-size: 1.2em; text-align: center; padding: 10px; background: rgba(255, 193, 7, 0.2); border-radius: 8px; margin-top: 10px;">';
+                strategy += '⚖️ <strong>QUYẾT ĐỊNH: CÂN NHẮC KỸ, CƯỢC VỪA PHẢI</strong>';
+                strategy += '</div>';
+            }
+            
+            strategy += '</div>';
+            
+            contentDiv.innerHTML = strategy;
+        }
+
+        function updatePredictionDisplay(prediction) {
+            // Cập nhật xác suất
+            document.getElementById('playerProb').textContent = 
+                prediction.P.toFixed(1) + '%';
+            document.getElementById('bankerProb').textContent = 
+                prediction.B.toFixed(1) + '%';
+            document.getElementById('tieProb').textContent = 
+                prediction.T.toFixed(1) + '%';
+            
+            // Cập nhật thanh confidence
+            document.getElementById('playerConfBar').style.width = 
+                prediction.P + '%';
+            document.getElementById('bankerConfBar').style.width = 
+                prediction.B + '%';
+            document.getElementById('tieConfBar').style.width = 
+                prediction.T + '%';
+            
+            // Highlight recommendation
+            const cards = document.querySelectorAll('.prediction-card');
+            cards.forEach(card => card.classList.remove('recommended'));
+            
+            const max = Math.max(prediction.P, prediction.B, prediction.T);
+            if (max === prediction.P && prediction.P > 40) {
+                document.getElementById('predPlayer').classList.add('recommended');
+            } else if (max === prediction.B && prediction.B > 40) {
+                document.getElementById('predBanker').classList.add('recommended');
+            } else if (max === prediction.T && prediction.T > 40) {
+                document.getElementById('predTie').classList.add('recommended');
+            }
+        }
+
+        function updateTrendAnalysisDisplay() {
+            // Cập nhật thống kê cho từng trường hợp
+            for (let i = 1; i <= 4; i++) {
+                const caseKey = `case${i}`;
+                const stats = trendStatistics[caseKey];
+                
+                // Cập nhật số lượng
+                document.getElementById(`${caseKey}Player`).textContent = 
+                    `${stats.P}/${stats.total}`;
+                document.getElementById(`${caseKey}Banker`).textContent = 
+                    `${stats.B}/${stats.total}`;
+                document.getElementById(`${caseKey}Tie`).textContent = 
+                    `${stats.T}/${stats.total}`;
+                
+                // Tính và cập nhật tỉ lệ thắng
+                if (stats.total > 0) {
+                    const rates = {
+                        P: (stats.P / stats.total * 100).toFixed(1),
+                        B: (stats.B / stats.total * 100).toFixed(1),
+                        T: (stats.T / stats.total * 100).toFixed(1)
+                    };
+                    
+                    document.getElementById(`${caseKey}PlayerRate`).textContent = `${rates.P}%`;
+                    document.getElementById(`${caseKey}BankerRate`).textContent = `${rates.B}%`;
+                    document.getElementById(`${caseKey}TieRate`).textContent = `${rates.T}%`;
+                    
+                    // Xác định cao nhất, thấp nhất
+                    const sorted = [
+                        { type: 'P', value: parseFloat(rates.P), element: `${caseKey}PlayerStat` },
+                        { type: 'B', value: parseFloat(rates.B), element: `${caseKey}BankerStat` },
+                        { type: 'T', value: parseFloat(rates.T), element: `${caseKey}TieStat` }
+                    ].sort((a, b) => b.value - a.value);
+                    
+                    // Reset classes
+                    document.getElementById(`${caseKey}PlayerStat`).classList.remove('highest-rate', 'lowest-rate');
+                    document.getElementById(`${caseKey}BankerStat`).classList.remove('highest-rate', 'lowest-rate');
+                    document.getElementById(`${caseKey}TieStat`).classList.remove('highest-rate', 'lowest-rate');
+                    
+                    // Add highest và lowest classes
+                    document.getElementById(sorted[0].element).classList.add('highest-rate');
+                    document.getElementById(sorted[2].element).classList.add('lowest-rate');
+                    
+                    // Cập nhật summary
+                    const typeNames = { P: 'Con', B: 'Cái', T: 'Hòa' };
+                    document.getElementById(`${caseKey}Highest`).textContent = 
+                        `${typeNames[sorted[0].type]} (${sorted[0].value}%)`;
+                    document.getElementById(`${caseKey}Middle`).textContent = 
+                        `${typeNames[sorted[1].type]} (${sorted[1].value}%)`;
+                    document.getElementById(`${caseKey}Lowest`).textContent = 
+                        `${typeNames[sorted[2].type]} (${sorted[2].value}%)`;
+                    
+                    // PHẦN MỚI: Tính và hiển thị độ chính xác dự đoán
+                    if (predictionAccuracy[caseKey]) {
+                        const accuracy = predictionAccuracy[caseKey];
+                        
+                        // Tính % cho dự đoán cao nhất
+                        if (accuracy.high.length > 0) {
+                            const highCorrect = accuracy.high.filter(x => x === 1).length;
+                            const highPercent = (highCorrect / accuracy.high.length * 100).toFixed(1);
+                            const highElement = document.getElementById(`${caseKey}HighAccuracy`);
+                            highElement.textContent = `${highPercent}%`;
+                            
+                            // Đổi màu theo độ chính xác
+                            highElement.classList.remove('good', 'medium', 'bad');
+                            if (parseFloat(highPercent) >= 50) {
+                                highElement.classList.add('good');
+                            } else if (parseFloat(highPercent) >= 33) {
+                                highElement.classList.add('medium');
+                            } else {
+                                highElement.classList.add('bad');
+                            }
+                        }
+                        
+                        // Tính % cho dự đoán giữa
+                        if (accuracy.mid.length > 0) {
+                            const midCorrect = accuracy.mid.filter(x => x === 1).length;
+                            const midPercent = (midCorrect / accuracy.mid.length * 100).toFixed(1);
+                            const midElement = document.getElementById(`${caseKey}MidAccuracy`);
+                            midElement.textContent = `${midPercent}%`;
+                            
+                            midElement.classList.remove('good', 'medium', 'bad');
+                            if (parseFloat(midPercent) >= 33) {
+                                midElement.classList.add('bad'); // Giữa về nhiều là không tốt
+                            } else {
+                                midElement.classList.add('medium');
+                            }
+                        }
+                        
+                        // Tính % cho dự đoán thấp nhất  
+                        if (accuracy.low.length > 0) {
+                            const lowCorrect = accuracy.low.filter(x => x === 1).length;
+                            const lowPercent = (lowCorrect / accuracy.low.length * 100).toFixed(1);
+                            const lowElement = document.getElementById(`${caseKey}LowAccuracy`);
+                            lowElement.textContent = `${lowPercent}%`;
+                            
+                            lowElement.classList.remove('good', 'medium', 'bad');
+                            if (parseFloat(lowPercent) <= 20) {
+                                lowElement.classList.add('good'); // Thấp ít về là tốt
+                            } else if (parseFloat(lowPercent) <= 33) {
+                                lowElement.classList.add('medium');
+                            } else {
+                                lowElement.classList.add('bad'); // Thấp về nhiều là xấu
+                            }
+                        }
+                    }
+                } else {
+                    // Reset khi chưa có data
+                    document.getElementById(`${caseKey}PlayerRate`).textContent = '0%';
+                    document.getElementById(`${caseKey}BankerRate`).textContent = '0%';
+                    document.getElementById(`${caseKey}TieRate`).textContent = '0%';
+                    document.getElementById(`${caseKey}Highest`).textContent = '-';
+                    document.getElementById(`${caseKey}Middle`).textContent = '-';
+                    document.getElementById(`${caseKey}Lowest`).textContent = '-';
+                    document.getElementById(`${caseKey}HighAccuracy`).textContent = '--%';
+                    document.getElementById(`${caseKey}MidAccuracy`).textContent = '--%';
+                    document.getElementById(`${caseKey}LowAccuracy`).textContent = '--%';
+                }
+            }
+            
+            // Cập nhật tổng thống kê
+            const totalAnalyzed = Object.values(trendStatistics)
+                .reduce((sum, stats) => sum + stats.total, 0);
+            document.getElementById('totalAnalyzed').textContent = totalAnalyzed;
+            
+            // Tính toán dự đoán đúng
+            let correctCount = 0;
+            trendAnalyzer.analysisRecords.forEach(record => {
+                if (record.predicted === record.actual) correctCount++;
+            });
+            document.getElementById('correctPredictions').textContent = correctCount;
+            
+            // Độ chính xác
+            const accuracy = totalAnalyzed > 0 ? 
+                (correctCount / totalAnalyzed * 100).toFixed(1) : 0;
+            const accuracyElement = document.getElementById('trendAccuracy');
+            accuracyElement.textContent = `${accuracy}%`;
+            
+            // Trường hợp phổ biến nhất
+            let mostCommon = { case: '-', count: 0 };
+            for (let caseKey in trendStatistics) {
+                if (trendStatistics[caseKey].total > mostCommon.count) {
+                    mostCommon = {
+                        case: caseKey,
+                        count: trendStatistics[caseKey].total
+                    };
+                }
+            }
+            
+            const caseNames = {
+                case1: 'TH1',
+                case2: 'TH2',
+                case3: 'TH3',
+                case4: 'TH4'
+            };
+            document.getElementById('mostCommonCase').textContent = 
+                mostCommon.count > 0 ? caseNames[mostCommon.case] : '-';
+            
+            // Xu hướng mạnh nhất
+            const trends = trendAnalyzer.analyzeTrends();
+            let strongestTrend = { trend: '-', confidence: 0 };
+            for (let caseKey in trends) {
+                if (trends[caseKey].confidence > strongestTrend.confidence) {
+                    strongestTrend = {
+                        trend: trends[caseKey].trend,
+                        confidence: trends[caseKey].confidence,
+                        case: caseKey
+                    };
+                }
+            }
+            
+            if (strongestTrend.confidence > 0) {
+                const trendName = strongestTrend.trend === 'P' ? 'Con' :
+                                 strongestTrend.trend === 'B' ? 'Cái' : 'Hòa';
+                document.getElementById('strongestTrend').textContent = 
+                    `${trendName} (${(strongestTrend.confidence * 100).toFixed(0)}%)`;
+            }
+            
+            // Cập nhật thống kê đề xuất
+            updateRecommendationStats();
+        }
+
+        function updateTrendRecommendation(prediction) {
+            const recommendation = trendAnalyzer.getRecommendation(prediction);
+            const recDiv = document.getElementById('trendRecommendation');
+            
+            // Lưu lại recommendation hiện tại
+            lastRecommendation = recommendation;
+            
+            if (!recommendation.recommendation) {
+                recDiv.innerHTML = '<div style="color: #ccc;">Đang thu thập dữ liệu...</div>';
+                return;
+            }
+            
+            // Xác định trường hợp hiện tại
+            const currentCase = trendAnalyzer.determineCase(prediction);
+            const caseDescriptions = {
+                case1: 'Trường hợp 1: Cao > Trung > Thấp',
+                case2: 'Trường hợp 2: Hòa lớn nhất',
+                case3: 'Trường hợp 3: Hòa nhỏ nhất',
+                case4: 'Trường hợp 4: Tỉ lệ cân bằng'
+            };
+            
+            // Cập nhật status
+            const statusElement = document.getElementById('trendStatus');
+            statusElement.textContent = caseDescriptions[currentCase];
+            statusElement.style.background = 'linear-gradient(135deg, #ffd700, #ff8c00)';
+            
+            // Hiển thị đề xuất
+            let recHTML = '';
+            const options = ['P', 'B', 'T'];
+            options.forEach(opt => {
+                const isRecommended = opt === recommendation.recommendation;
+                const className = opt === 'P' ? 'player-rec' :
+                                opt === 'B' ? 'banker-rec' : 'tie-rec';
+                const text = opt === 'P' ? 'CON' :
+                           opt === 'B' ? 'CÁI' : 'HÒA';
+                const highlightClass = isRecommended ? 'highlighted' : '';
+                
+                recHTML += `
+                    <div class="rec-option ${className} ${highlightClass}">
+                        ${text}
+                        ${isRecommended ? '<br><small>Đề xuất</small>' : ''}
+                    </div>
+                `;
+            });
+            
+            recDiv.innerHTML = recHTML;
+            
+            // Cập nhật độ chính xác
+            const accuracyElement = document.getElementById('trendAccuracy');
+            if (trendAnalyzer.analysisRecords.length > 0) {
+                let correct = 0;
+                trendAnalyzer.analysisRecords.forEach(record => {
+                    if (record.predicted === record.actual) correct++;
+                });
+                const accuracy = (correct / trendAnalyzer.analysisRecords.length * 100).toFixed(1);
+                accuracyElement.textContent = `${accuracy}%`;
+            }
+            
+            // Cập nhật thống kê đề xuất
+            updateRecommendationStats();
+        }
+        
+        function updateRecommendationStats() {
+            // Cập nhật thống kê cho từng trường hợp
+            for (let i = 1; i <= 4; i++) {
+                const caseKey = `case${i}`;
+                const stats = recommendationStats[caseKey];
+                
+                // Cập nhật số lần đúng/sai
+                document.getElementById(`${caseKey}RecCorrect`).textContent = stats.correct;
+                document.getElementById(`${caseKey}RecWrong`).textContent = stats.wrong;
+                
+                // Tính tỉ lệ
+                const total = stats.correct + stats.wrong;
+                if (total > 0) {
+                    const rate = ((stats.correct / total) * 100).toFixed(1);
+                    const rateElement = document.getElementById(`${caseKey}RecRate`);
+                    rateElement.textContent = `${rate}%`;
+                    
+                    // Đổi màu theo tỉ lệ
+                    rateElement.classList.remove('correct', 'wrong', 'rate');
+                    if (parseFloat(rate) >= 60) {
+                        rateElement.classList.add('correct');
+                    } else if (parseFloat(rate) <= 40) {
+                        rateElement.classList.add('wrong');
+                    } else {
+                        rateElement.classList.add('rate');
+                    }
+                } else {
+                    document.getElementById(`${caseKey}RecRate`).textContent = '--%';
+                }
+            }
+        }
+
+        function updatePatternDisplay(patterns) {
+            const patternList = document.getElementById('patternList');
+            
+            if (patterns.length === 0) {
+                patternList.innerHTML = '<div class="pattern-item">Chưa phát hiện mẫu lặp</div>';
+                return;
+            }
+            
+            const topPatterns = patterns
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 5);
+            
+            patternList.innerHTML = topPatterns.map(p => `
+                <div class="pattern-item">
+                    <span>Mẫu: ${p.pattern} (${p.type})</span>
+                    <span>Độ tin cậy: ${(p.confidence * 100).toFixed(0)}%</span>
+                </div>
+            `).join('');
+        }
+
+        function updateCycleDisplay(cycles) {
+            const cycleText = document.getElementById('cycleDetected');
+            
+            if (cycles.length > 0) {
+                const bestCycle = cycles[0];
+                cycleText.textContent = `Chu kỳ ${bestCycle.length} ván (${(bestCycle.confidence * 100).toFixed(0)}%)`;
+            } else {
+                cycleText.textContent = 'Chưa phát hiện';
+            }
+        }
+
+        function updateAdvancedMetrics(history) {
+            const metricsDiv = document.getElementById('advancedMetrics');
+            
+            // Tính các chỉ số nâng cao
+            const metrics = {
+                volatility: calculateVolatility(history),
+                entropy: calculateEntropy(history),
+                autocorrelation: calculateAutocorrelation(history),
+                runTest: performRunTest(history),
+                chiSquare: performChiSquareTest(history)
+            };
+            
+            metricsDiv.innerHTML = `
+                <div class="pattern-item">
+                    <span>Độ biến động:</span>
+                    <span>${metrics.volatility.toFixed(2)}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Entropy:</span>
+                    <span>${metrics.entropy.toFixed(3)}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Tự tương quan:</span>
+                    <span>${metrics.autocorrelation.toFixed(3)}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Run Test:</span>
+                    <span>${metrics.runTest}</span>
+                </div>
+                <div class="pattern-item">
+                    <span>Chi-Square:</span>
+                    <span>${metrics.chiSquare.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        function calculateVolatility(history) {
+            if (history.length < 2) return 0;
+            
+            let changes = 0;
+            for (let i = 1; i < history.length; i++) {
+                if (history[i] !== history[i-1]) changes++;
+            }
+            
+            return changes / (history.length - 1);
+        }
+
+        function calculateEntropy(history) {
+            const counts = {};
+            history.forEach(h => {
+                counts[h] = (counts[h] || 0) + 1;
+            });
+            
+            let entropy = 0;
+            const total = history.length;
+            
+            for (let key in counts) {
+                const p = counts[key] / total;
+                if (p > 0) {
+                    entropy -= p * Math.log2(p);
+                }
+            }
+            
+            return entropy;
+        }
+
+        function calculateAutocorrelation(history, lag = 1) {
+            if (history.length < lag + 1) return 0;
+            
+            const values = history.map(h => h === 'P' ? 1 : h === 'B' ? -1 : 0);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            
+            let numerator = 0;
+            let denominator = 0;
+            
+            for (let i = 0; i < values.length - lag; i++) {
+                numerator += (values[i] - mean) * (values[i + lag] - mean);
+            }
+            
+            for (let i = 0; i < values.length; i++) {
+                denominator += Math.pow(values[i] - mean, 2);
+            }
+            
+            return denominator === 0 ? 0 : numerator / denominator;
+        }
+
+        function performRunTest(history) {
+            let runs = 1;
+            for (let i = 1; i < history.length; i++) {
+                if (history[i] !== history[i-1]) runs++;
+            }
+            
+            const expected = (2 * history.length - 1) / 3;
+            const zScore = (runs - expected) / Math.sqrt(expected);
+            
+            if (Math.abs(zScore) < 1.96) {
+                return 'Ngẫu nhiên';
+            } else {
+                return zScore > 0 ? 'Quá nhiều thay đổi' : 'Quá ít thay đổi';
+            }
+        }
+
+        function performChiSquareTest(history) {
+            const counts = { P: 0, B: 0, T: 0 };
+            history.forEach(h => {
+                if (counts[h] !== undefined) counts[h]++;
+            });
+            
+            const total = history.length;
+            const expected = total / 3;
+            
+            let chiSquare = 0;
+            for (let key in counts) {
+                chiSquare += Math.pow(counts[key] - expected, 2) / expected;
+            }
+            
+            return chiSquare;
+        }
+
+        function resetPredictions() {
+            document.getElementById('playerProb').textContent = '33.3%';
+            document.getElementById('bankerProb').textContent = '33.3%';
+            document.getElementById('tieProb').textContent = '33.3%';
+            
+            document.getElementById('playerConfBar').style.width = '33.3%';
+            document.getElementById('bankerConfBar').style.width = '33.3%';
+            document.getElementById('tieConfBar').style.width = '33.3%';
+            
+            document.querySelectorAll('.prediction-card')
+                .forEach(card => card.classList.remove('recommended'));
+        }
+
+        // Khởi tạo
+        updateDisplay();
+        updateTrendAnalysisDisplay();
+        updateRecommendationStats();
+    </script>
+</body>
+</html>
