@@ -3,488 +3,533 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Ghi Nhớ & Phán Đoán Hình Cầu</title>
+    <title>Hệ Thống Phân Tích Baccarat Toàn Diện (AI)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #111827; /* Tailwind gray-900 */
-            color: #F9FAFB; /* Tailwind gray-50 */
+            background-color: #0c101b;
+            color: #F9FAFB;
         }
         .btn {
             transition: all 0.3s ease;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        .btn:active {
-            transform: translateY(1px);
+        .btn:active:not(:disabled) { transform: translateY(1px); }
+        .card-glow-p { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        .card-glow-b { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        .card-glow-wait { box-shadow: 0 0 20px rgba(156, 163, 175, 0.4); }
+
+        .road-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 24px;
+            gap: 2px;
+            overflow-x: auto;
+            padding: 8px;
+            min-height: 160px;
+            scrollbar-width: thin;
+            scrollbar-color: #4b5563 #1f2937;
         }
-        .history-item {
-            animation: fadeIn 0.5s ease;
+        .road-col {
+            display: grid;
+            grid-auto-rows: 24px;
+            gap: 2px;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
+        .road-item {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: white;
+            position: relative;
         }
-        .card-glow-p {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        .road-item-big { border-radius: 9999px; border: 2px solid; }
+        .road-item-p { border-color: #3b82f6; color: #3b82f6; }
+        .road-item-b { border-color: #ef4444; color: #ef4444; }
+        .road-item-t { background-color: #10b981; border-radius: 9999px; }
+
+        /* Tie Slash */
+        .tie-slash {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: #10b981;
+            transform: rotate(-45deg);
         }
-        .card-glow-b {
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+
+        /* Pair Dots */
+        .pair-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        .pair-dot.p-pair { background-color: #3b82f6; top: 2px; right: 2px; }
+        .pair-dot.b-pair { background-color: #ef4444; bottom: 2px; left: 2px; }
+
+        .bead-plate-item-p { background-color: #3b82f6; border-radius: 9999px;}
+        .bead-plate-item-b { background-color: #ef4444; border-radius: 9999px;}
+        
+        /* Corrected Derived Road Styles */
+        .derived-item { width: 10px; height: 10px; border-radius: 9999px; }
+        .big-eye-boy-p { border: 2px solid #ef4444; }
+        .big-eye-boy-b { border: 2px solid #3b82f6; }
+        .small-road-p { background-color: #ef4444; }
+        .small-road-b { background-color: #3b82f6; }
+        .cockroach-pig-p { border: 1px solid #ef4444; background: linear-gradient(to top right, transparent calc(50% - 0.5px), #ef4444, transparent calc(50% + 0.5px)); }
+        .cockroach-pig-b { border: 1px solid #3b82f6; background: linear-gradient(to top right, transparent calc(50% - 0.5px), #3b82f6, transparent calc(50% + 0.5px)); }
+        
+        .pair-checkbox:checked {
+            background-color: currentColor;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8 bg-gray-900">
 
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="max-w-screen-xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Left Column: Input & History -->
-        <div class="lg:col-span-2 space-y-6">
-            <!-- Header -->
-            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
-                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-red-400">Hệ Thống Phân Tích Hình Cầu</h1>
-                <p class="text-gray-400 mt-2">Ghi nhớ - Đối chiếu - Phán đoán</p>
+    <!-- Left Column: Input & History -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Header -->
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
+            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-red-400">Hệ Thống Phân Tích Baccarat Toàn Diện</h1>
+            <p class="text-gray-400 mt-2">Nâng cấp: Dự Đoán Kịch Bản 2 Ván Tới</p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+             <div class="flex justify-between items-center mb-4">
+                 <h2 class="text-xl font-semibold text-blue-300">⚙️ Bảng Điều Khiển</h2>
+                 <button onclick="openSettingsModal()" class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-cog fa-lg"></i></button>
+             </div>
+            
+            <div class="grid grid-cols-3 gap-4 mb-4">
+                <button onclick="addResult('P')" class="btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 rounded-lg text-2xl">
+                    <span>👤</span> CON
+                </button>
+                 <button onclick="addResult('T')" class="btn bg-green-600 hover:bg-green-500 text-white font-bold py-6 rounded-lg text-2xl">
+                    <span>🤝</span> HÒA
+                </button>
+                <button onclick="addResult('B')" class="btn bg-red-600 hover:bg-red-500 text-white font-bold py-6 rounded-lg text-2xl">
+                    <span>🏦</span> CÁI
+                </button>
             </div>
 
-            <!-- Session Management -->
-            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-                <h2 class="text-xl font-semibold mb-4 text-blue-300">📁 Quản Lý Phiên</h2>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <select id="sessionSelector" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"></select>
-                    <div class="flex gap-4">
-                        <button onclick="createNewSession()" class="btn w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg">➕ Phiên Mới</button>
-                        <button onclick="deleteSelectedSession()" class="btn w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-lg">🗑️ Xóa Phiên</button>
-                    </div>
-                </div>
+            <div class="flex items-center justify-center gap-6 mb-4 text-white">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="playerPair" class="w-5 h-5 rounded border-2 border-blue-400 text-blue-500 focus:ring-blue-500 pair-checkbox appearance-none">
+                    <span>Con Đôi</span>
+                </label>
+                 <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="bankerPair" class="w-5 h-5 rounded border-2 border-red-400 text-red-500 focus:ring-red-500 pair-checkbox appearance-none">
+                    <span>Cái Đôi</span>
+                </label>
             </div>
 
-            <!-- Input Section -->
-            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-                <h2 class="text-xl font-semibold mb-4 text-blue-300">🎲 Nhập Kết Quả Ván Hiện Tại</h2>
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <button onclick="addResult('P')" class="btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 rounded-lg text-2xl">
-                        <span>👤</span> PLAYER
-                    </button>
-                    <button onclick="addResult('B')" class="btn bg-red-600 hover:bg-red-500 text-white font-bold py-6 rounded-lg text-2xl">
-                        <span>🏦</span> BANKER
-                    </button>
-                </div>
-                <div class="flex gap-4">
-                     <button onclick="undoLast()" class="btn flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg">↩️ Hoàn Tác</button>
-                     <button onclick="clearCurrentSessionHistory()" class="btn flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg">🗑️ Xóa Lịch Sử</button>
-                </div>
-            </div>
-
-            <!-- History Display -->
-            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-                <h2 class="text-xl font-semibold mb-4 text-blue-300">📜 Lịch Sử Ván: <span id="totalGames">0</span> ván</h2>
-                <div id="historyDisplay" class="flex flex-wrap gap-3 bg-gray-900 p-4 rounded-lg min-h-[60px] border border-gray-700">
-                    <p class="text-gray-500">Chưa có kết quả...</p>
-                </div>
+            <div class="flex gap-4">
+                <button onclick="undoLast()" class="btn flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg">↩️ Hoàn Tác</button>
+                <button onclick="clearHistory()" class="btn flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg">🗑️ Xóa Lịch Sử</button>
             </div>
         </div>
 
-        <!-- Right Column: Analysis & Stats -->
-        <div class="space-y-6">
-            <!-- Accuracy Stats -->
-            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-                <h2 class="text-xl font-semibold mb-4 text-green-300">🎯 Thống Kê Độ Chính Xác</h2>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center bg-gray-700 p-4 rounded-lg">
-                        <span class="font-medium text-gray-300">Tỷ Lệ Thắng</span>
-                        <span id="accuracyRate" class="text-2xl font-bold text-green-400">0.0%</span>
-                    </div>
-                    <div class="flex justify-between items-center bg-gray-700 p-4 rounded-lg">
-                        <span class="font-medium text-gray-300">Thắng / Tổng Dự Đoán</span>
-                        <div>
-                            <span id="correctPredictions" class="text-lg font-semibold text-white">0</span>
-                            <span class="text-gray-400">/</span>
-                            <span id="totalPredictions" class="text-lg font-semibold text-white">0</span>
-                        </div>
-                    </div>
+        <!-- History Display -->
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-blue-300">📜 Các Bảng Cầu</h2>
+                    <span class="text-gray-400 font-medium text-sm">Tổng: <span id="totalGames">0</span> ván</span>
                 </div>
+                <div id="statsContainer" class="text-right text-xs space-y-1 text-gray-300 bg-gray-900/50 p-2 rounded-md"></div>
             </div>
 
-            <!-- Pattern Analysis -->
-            <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500">
-                <h2 class="text-xl font-semibold mb-4 text-yellow-300">🧠 Phân Tích & Đề Xuất</h2>
-                <div id="analysisResult" class="space-y-4">
-                    <p class="text-gray-400 text-center py-8">Cần ít nhất 4 kết quả để bắt đầu phân tích...</p>
+            <div class="grid grid-cols-12 gap-2">
+                <!-- Main Roads -->
+                <div class="col-span-12 md:col-span-8 space-y-2">
+                    <div class="bg-gray-900 rounded-lg border border-gray-700"><div id="beadPlateDisplay" class="road-grid"></div></div>
+                    <div class="bg-gray-900 rounded-lg border border-gray-700"><div id="bigRoadDisplay" class="road-grid"></div></div>
+                </div>
+                <!-- Derived Roads -->
+                <div class="col-span-12 md:col-span-4 space-y-2">
+                    <div class="bg-gray-900 rounded-lg border border-gray-700 grid grid-cols-2">
+                        <div id="bigEyeBoyDisplay" class="road-grid !grid-auto-columns-[10px] !grid-auto-rows-[10px] !min-h-[80px] !p-1"></div>
+                        <div id="pAskDisplay" class="road-grid !grid-auto-columns-[10px] !grid-auto-rows-[10px] !min-h-[80px] !p-1 border-l-2 border-gray-700"></div>
+                    </div>
+                     <div class="bg-gray-900 rounded-lg border border-gray-700 grid grid-cols-2">
+                        <div id="smallRoadDisplay" class="road-grid !grid-auto-columns-[10px] !grid-auto-rows-[10px] !min-h-[80px] !p-1"></div>
+                        <div id="bAskDisplay" class="road-grid !grid-auto-columns-[10px] !grid-auto-rows-[10px] !min-h-[80px] !p-1 border-l-2 border-gray-700"></div>
+                    </div>
+                     <div class="bg-gray-900 rounded-lg border border-gray-700"><div id="cockroachPigDisplay" class="road-grid !grid-auto-columns-[10px] !grid-auto-rows-[10px] !min-h-[80px] !p-1"></div></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // --- CORE LOGIC: PATTERN MATCHER ---
-        class PatternMatcher {
-            constructor() {
-                this.MIN_HISTORY_FOR_ANALYSIS = 4;
-                this.MIN_PATTERN_LENGTH = 4;
-                this.MAX_PATTERN_LENGTH = 12;
-            }
-
-            /**
-             * Calculates the similarity between two arrays (0 to 1).
-             */
-            calculateSimilarity(arr1, arr2) {
-                if (arr1.length !== arr2.length || arr1.length === 0) return 0;
-                const matches = arr1.filter((item, index) => item === arr2[index]).length;
-                return matches / arr1.length;
-            }
-
-            /**
-             * Finds all occurrences of a pattern in historical data.
-             */
-            findPatternOccurrences(pattern, allHistory) {
-                const occurrences = [];
-                if (pattern.length < this.MIN_PATTERN_LENGTH) return occurrences;
-
-                const reversedPattern = [...pattern].reverse();
-
-                for (const sessionHistory of allHistory) {
-                    if (sessionHistory.length < pattern.length + 1) continue;
-
-                    for (let i = 0; i <= sessionHistory.length - pattern.length - 1; i++) {
-                        const segment = sessionHistory.slice(i, i + pattern.length);
-                        
-                        const similarity = this.calculateSimilarity(pattern, segment);
-                        const reverseSimilarity = this.calculateSimilarity(reversedPattern, segment);
-
-                        const nextResult = sessionHistory[i + pattern.length];
-
-                        if (similarity >= 0.9) {
-                            occurrences.push({ type: 'similar', next: nextResult, similarity });
-                        }
-                        if (reverseSimilarity >= 0.9) {
-                            occurrences.push({ type: 'reversed', next: nextResult, similarity: reverseSimilarity });
-                        }
-                    }
-                }
-                return occurrences;
-            }
-
-            /**
-             * Analyzes the current streak (bệt or 1-1).
-             */
-            analyzeCurrentStreak(currentHistory) {
-                if (currentHistory.length < 2) return { type: 'none', length: currentHistory.length };
-
-                const last = currentHistory[currentHistory.length - 1];
-                const secondLast = currentHistory[currentHistory.length - 2];
-
-                if (last === secondLast) { // Bệt
-                    let length = 0;
-                    for (let i = currentHistory.length - 1; i >= 0; i--) {
-                        if (currentHistory[i] === last) length++;
-                        else break;
-                    }
-                    return { type: 'bệt', length, value: last };
-                } else { // Cầu 1-1
-                     let length = 0;
-                     for (let i = currentHistory.length - 1; i >= 1; i--) {
-                        if (currentHistory[i] !== currentHistory[i-1]) length++;
-                        else break;
-                    }
-                    return { type: '1-1', length: length + 1 };
-                }
-            }
-
-            /**
-             * The main analysis function.
-             */
-            getPrediction(currentHistory, allHistoricalSessions) {
-                if (currentHistory.length < this.MIN_HISTORY_FOR_ANALYSIS) {
-                    return { prediction: null, analysisText: `Cần ít nhất ${this.MIN_HISTORY_FOR_ANALYSIS} kết quả để bắt đầu phân tích...`, foundMatches: 0 };
-                }
-
-                const allMatches = [];
-                // Iterate from a max pattern length down to a minimum
-                for (let len = Math.min(this.MAX_PATTERN_LENGTH, currentHistory.length); len >= this.MIN_PATTERN_LENGTH; len--) {
-                    const pattern = currentHistory.slice(-len);
-                    const occurrences = this.findPatternOccurrences(pattern, allHistoricalSessions);
-                    if (occurrences.length > 0) {
-                        allMatches.push(...occurrences);
-                        break; // Stop after finding matches for the longest possible pattern
-                    }
-                }
-
-                if (allMatches.length === 0) {
-                    return { prediction: null, analysisText: 'Không tìm thấy hình cầu tương tự trong quá khứ.', foundMatches: 0 };
-                }
-
-                const votes = { P: 0, B: 0 };
-                allMatches.forEach(match => {
-                    if (votes[match.next] !== undefined) {
-                        votes[match.next] += match.similarity; // Weight vote by similarity
-                    }
-                });
-
-                const streakInfo = this.analyzeCurrentStreak(currentHistory);
-                const predictedWinner = votes.P > votes.B ? 'P' : 'B';
-                const loser = predictedWinner === 'P' ? 'B' : 'P';
-
-                if (votes.P === votes.B) {
-                     return { prediction: null, analysisText: `Phân tích không rõ ràng (P: ${votes.P.toFixed(1)}, B: ${votes.B.toFixed(1)}). Bỏ qua tay này.`, foundMatches: allMatches.length };
-                }
-
-                let recommendation = '';
-                if (streakInfo.type === 'bệt' && predictedWinner === streakInfo.value) {
-                    recommendation = `THEO CẦU BỆT (${streakInfo.value} x${streakInfo.length})`;
-                } else if (streakInfo.type === 'bệt' && predictedWinner !== streakInfo.value) {
-                    recommendation = `BẺ CẦU BỆT (${streakInfo.value} x${streakInfo.length})`;
-                } else if (streakInfo.type === '1-1' && predictedWinner !== currentHistory[currentHistory.length - 1]) {
-                    recommendation = `THEO CẦU 1-1 (Dài ${streakInfo.length})`;
-                } else if (streakInfo.type === '1-1' && predictedWinner === currentHistory[currentHistory.length - 1]) {
-                    recommendation = `BẺ CẦU 1-1 (Dài ${streakInfo.length})`;
-                } else {
-                    recommendation = `THEO PHÂN TÍCH LỊCH SỬ`;
-                }
-                
-                const analysisText = `Tìm thấy ${allMatches.length} hình cầu tương tự. Lịch sử cho thấy kết quả tiếp theo là:\n- PLAYER: ${votes.P.toFixed(1)} điểm\n- BANKER: ${votes.B.toFixed(1)} điểm`;
-                
-                return {
-                    prediction: predictedWinner,
-                    recommendation,
-                    analysisText,
-                    foundMatches: allMatches.length,
-                    votes
-                };
-            }
-        }
-
-        // --- ACCURACY TRACKER ---
-        class AccuracyTracker {
-            constructor() {
-                this.predictions = []; // { predicted: 'P' | 'B', actual: 'P' | 'B' }
-                this.currentPrediction = null;
-            }
-
-            makePrediction(prediction) {
-                this.currentPrediction = prediction;
-            }
-
-            recordActualResult(actual) {
-                if (this.currentPrediction) {
-                    this.predictions.push({ predicted: this.currentPrediction, actual });
-                }
-                this.currentPrediction = null;
-            }
-
-            getStats() {
-                const total = this.predictions.length;
-                if (total === 0) return { rate: 0, correct: 0, total: 0 };
-                const correct = this.predictions.filter(p => p.predicted === p.actual).length;
-                return {
-                    rate: (correct / total) * 100,
-                    correct,
-                    total
-                };
-            }
-
-            reset() {
-                this.predictions = [];
-                this.currentPrediction = null;
-            }
-        }
-
-        // --- GLOBAL STATE ---
-        let state = {
-            currentSessionId: null,
-            sessions: {},
-            matcher: new PatternMatcher(),
-            accuracyTracker: new AccuracyTracker()
-        };
-
-        // --- UI UPDATE FUNCTIONS ---
-        function updateHistoryUI() {
-            const history = state.sessions[state.currentSessionId]?.history || [];
-            const historyDiv = document.getElementById('historyDisplay');
-            document.getElementById('totalGames').textContent = history.length;
-
-            if (history.length === 0) {
-                historyDiv.innerHTML = '<p class="text-gray-500">Chưa có kết quả...</p>';
-                return;
-            }
-
-            historyDiv.innerHTML = history.map(result => {
-                const isPlayer = result === 'P';
-                const bgColor = isPlayer ? 'bg-blue-500' : 'bg-red-500';
-                const textColor = 'text-white';
-                return `<div class="history-item ${bgColor} ${textColor} w-10 h-10 flex items-center justify-center rounded-full font-bold text-lg shadow-md">${result}</div>`;
-            }).join('');
-        }
-
-        function updateAccuracyUI() {
-            const stats = state.accuracyTracker.getStats();
-            document.getElementById('accuracyRate').textContent = `${stats.rate.toFixed(1)}%`;
-            document.getElementById('correctPredictions').textContent = stats.correct;
-            document.getElementById('totalPredictions').textContent = stats.total;
-        }
-
-        function updateAnalysisUI() {
-            const currentHistory = state.sessions[state.currentSessionId]?.history || [];
-            const allHistory = Object.values(state.sessions).map(s => s.history);
-            
-            const { prediction, recommendation, analysisText, foundMatches, votes } = state.matcher.getPrediction(currentHistory, allHistory);
-            
-            state.accuracyTracker.makePrediction(prediction);
-
-            const analysisResultDiv = document.getElementById('analysisResult');
-            const analysisCard = document.getElementById('analysis-card');
-
-            analysisCard.classList.remove('card-glow-p', 'card-glow-b');
-
-            if (prediction) {
-                analysisResultDiv.innerHTML = `
-                    <div class="bg-gray-700 p-4 rounded-lg">
-                        <p class="text-gray-300 whitespace-pre-wrap">${analysisText}</p>
-                    </div>
-                    <div class="text-center bg-gray-900 py-6 rounded-lg border-2 ${prediction === 'P' ? 'border-blue-500' : 'border-red-500'}">
-                        <p class="text-lg text-gray-400 mb-2">Đề xuất:</p>
-                        <p class="text-3xl font-extrabold ${prediction === 'P' ? 'text-blue-400' : 'text-red-400'}">${recommendation}</p>
-                        <p class="text-4xl font-bold mt-2">${prediction === 'P' ? '👤 PLAYER' : '🏦 BANKER'}</p>
-                    </div>
-                `;
-                if (prediction === 'P') {
-                    analysisCard.classList.add('card-glow-p');
-                } else {
-                    analysisCard.classList.add('card-glow-b');
-                }
-            } else {
-                analysisResultDiv.innerHTML = `<p class="text-gray-400 text-center py-8">${analysisText}</p>`;
-            }
-        }
+    <!-- Right Column: Analysis & Stats -->
+    <div class="space-y-6">
+        <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500 sticky top-6">
+            <h2 class="text-xl font-semibold mb-4 text-yellow-300 flex items-center gap-2">
+                <i class="fa-solid fa-brain"></i> Phân Tích Kịch Bản & Đề Xuất
+            </h2>
+            <div id="analysisResult" class="space-y-4 min-h-[220px] flex flex-col justify-center">
+                <!-- AI content goes here -->
+            </div>
+        </div>
         
-        function updateAllUI() {
-            updateHistoryUI();
-            updateAccuracyUI();
-            updateAnalysisUI();
-        }
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+            <h2 class="text-xl font-semibold mb-4 text-blue-300">📊 Thống Kê Đề Xuất (Ván 1)</h2>
+            <div id="predictionStats" class="grid grid-cols-4 gap-2 text-center mb-4"></div>
+            <div id="predictionChart" class="w-full h-24 bg-gray-900 rounded-lg p-2 flex items-end gap-1 overflow-x-auto"></div>
+        </div>
+    </div>
+</div>
 
-        // --- EVENT HANDLERS & ACTIONS ---
-        function addResult(result) {
-            if (!state.currentSessionId) return;
-            const actualResult = result;
-            
-            // Record accuracy for the previous prediction before adding the new result
-            state.accuracyTracker.recordActualResult(actualResult);
+<!-- Settings Modal -->
+<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
 
-            // Add new result to history
-            state.sessions[state.currentSessionId].history.push(actualResult);
-            
-            saveSessions();
-            updateAllUI();
-        }
+<script>
+// --- GLOBAL STATE & CONFIG ---
+let state = {
+    history: [],
+    apiKey: '',
+    isAnalyzing: false,
+    lastPrediction: null, // Now holds a complex object: { next_hand: {}, if_next_is_P: {}, if_next_is_B: {} }
+    predictions: [], 
+};
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
 
-        function undoLast() {
-            if (!state.currentSessionId || state.sessions[state.currentSessionId].history.length === 0) return;
-            
-            // This is a simplified undo. A more robust system would also revert the accuracy state.
-            state.sessions[state.currentSessionId].history.pop();
-            state.accuracyTracker.predictions.pop(); // Simple undo for accuracy as well
-
-            saveSessions();
-            updateAllUI();
-        }
-
-        function clearCurrentSessionHistory() {
-            if (!state.currentSessionId) return;
-            if (confirm('Bạn có chắc muốn xóa toàn bộ lịch sử của phiên này không?')) {
-                state.sessions[state.currentSessionId].history = [];
-                state.accuracyTracker.reset();
-                saveSessions();
-                updateAllUI();
-            }
-        }
-
-        // --- SESSION MANAGEMENT ---
-        function getSessions() {
-            try {
-                return JSON.parse(localStorage.getItem('baccaratPatternSessions_v2')) || {};
-            } catch (e) {
-                return {};
-            }
-        }
-
-        function saveSessions() {
-            localStorage.setItem('baccaratPatternSessions_v2', JSON.stringify(state.sessions));
-            localStorage.setItem('lastActiveSession_v2', state.currentSessionId);
-        }
-
-        function updateSessionSelector() {
-            const selector = document.getElementById('sessionSelector');
-            selector.innerHTML = '';
-            const sortedKeys = Object.keys(state.sessions).sort((a, b) => parseInt(b.split('-')[1]) - parseInt(a.split('-')[1]));
-
-            for (const sessionId of sortedKeys) {
-                const session = state.sessions[sessionId];
-                const option = document.createElement('option');
-                option.value = sessionId;
-                option.textContent = `${session.name} (${session.history.length} ván)`;
-                selector.appendChild(option);
-            }
-            selector.value = state.currentSessionId;
-            selector.onchange = () => loadSession(selector.value);
-        }
-
-        function createNewSession() {
-            const newId = `session-${Date.now()}`;
-            state.currentSessionId = newId;
-            state.sessions[newId] = {
-                name: `Phiên ${new Date().toLocaleString('vi-VN')}`,
-                history: []
-            };
-            state.accuracyTracker.reset();
-            saveSessions();
-            updateSessionSelector();
-            updateAllUI();
-        }
-
-        function deleteSelectedSession() {
-            if (!state.currentSessionId || Object.keys(state.sessions).length <= 1) {
-                alert('Không thể xóa phiên cuối cùng.');
-                return;
-            }
-            if (confirm('Bạn có chắc muốn xóa phiên này không?')) {
-                delete state.sessions[state.currentSessionId];
-                state.currentSessionId = null;
-                localStorage.removeItem('lastActiveSession_v2');
-                saveSessions();
-                initializeApp();
-            }
-        }
-
-        function loadSession(sessionId) {
-            if (state.sessions[sessionId]) {
-                state.currentSessionId = sessionId;
-                // NOTE: Accuracy is session-specific and should be reset when switching.
-                // A more advanced implementation could save accuracy state per session.
-                state.accuracyTracker.reset();
-                localStorage.setItem('lastActiveSession_v2', sessionId);
-                updateSessionSelector();
-                updateAllUI();
-            }
-        }
-
-        function initializeApp() {
-            state.sessions = getSessions();
-            const lastActiveId = localStorage.getItem('lastActiveSession_v2');
-
-            if (Object.keys(state.sessions).length === 0) {
-                createNewSession();
+// --- ROADMAP LOGIC ---
+class BaccaratRoadmapGenerator {
+    generateBigRoad(history) {
+        const columns = []; if (history.length === 0) return columns;
+        let currentCol = []; let lastWinner = null;
+        history.forEach(item => {
+            if (item.winner === 'T') {
+                if (currentCol.length > 0) { currentCol[currentCol.length - 1].ties = (currentCol[currentCol.length - 1].ties || 0) + 1; } 
+                else if (columns.length > 0) { const prevCol = columns[columns.length - 1]; prevCol[prevCol.length - 1].ties = (prevCol[prevCol.length - 1].ties || 0) + 1; }
             } else {
-                const idToLoad = (lastActiveId && state.sessions[lastActiveId]) ? lastActiveId : Object.keys(state.sessions)[0];
-                loadSession(idToLoad);
+                const bead = { winner: item.winner, pPair: item.pPair, bPair: item.bPair, ties: 0 };
+                if (item.winner === lastWinner) { currentCol.push(bead); } 
+                else { if (currentCol.length > 0) columns.push(currentCol); currentCol = [bead]; lastWinner = item.winner; }
+            }
+        });
+        if (currentCol.length > 0) columns.push(currentCol); return columns;
+    }
+    generateDerivedRoads(bigRoad, hypotheticalWinner = null) {
+        let tempBigRoad = JSON.parse(JSON.stringify(bigRoad));
+        if (hypotheticalWinner) {
+            const lastCol = tempBigRoad[tempBigRoad.length - 1];
+            if (lastCol && lastCol[0].winner === hypotheticalWinner) { lastCol.push({ winner: hypotheticalWinner }); } 
+            else { tempBigRoad.push([{ winner: hypotheticalWinner }]); }
+        }
+        const results = { bigEyeBoy: [], smallRoad: [], cockroachPig: [] };
+        for (let i = 0; i < tempBigRoad.length; i++) {
+            for (let j = 0; j < tempBigRoad[i].length; j++) {
+                if ((i === 1 && j === 1) || i > 1) this.addDerivedResult(results.bigEyeBoy, tempBigRoad, i, j, 1);
+                if ((i === 2 && j === 1) || i > 2) this.addDerivedResult(results.smallRoad, tempBigRoad, i, j, 2);
+                if ((i === 3 && j === 1) || i > 3) this.addDerivedResult(results.cockroachPig, tempBigRoad, i, j, 3);
             }
         }
+        return results;
+    }
+    addDerivedResult(road, bigRoad, i, j, offset) { const result = this.compare(bigRoad, i, j, offset); if (result) road.push(result); }
+    compare(bigRoad, i, j, offset) {
+        let isPattern;
+        if (j === 0) {
+            const prevCol = bigRoad[i - 1]; const refCol = bigRoad[i - 1 - offset]; if (!prevCol || !refCol) return null;
+            isPattern = prevCol.length === refCol.length;
+        } else {
+            const refCol = bigRoad[i - offset]; if (!refCol) return null;
+            const hasBeadAtDepth = !!refCol[j]; const hasBeadAtPrevDepth = !!refCol[j - 1];
+            isPattern = hasBeadAtDepth === hasBeadAtPrevDepth;
+        }
+        return { winner: isPattern ? 'P' : 'B' };
+    }
+}
+const roadmapGenerator = new BaccaratRoadmapGenerator();
 
-        // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', initializeApp);
-    </script>
+// --- UI RENDERING ---
+function renderAllRoads() {
+    const bigRoad = roadmapGenerator.generateBigRoad(state.history);
+    renderBeadPlateUI(state.history);
+    renderBigRoadUI(bigRoad);
+    const derivedRoads = roadmapGenerator.generateDerivedRoads(bigRoad);
+    renderDerivedRoadUI('bigEyeBoyDisplay', derivedRoads.bigEyeBoy, 'big-eye-boy');
+    renderDerivedRoadUI('smallRoadDisplay', derivedRoads.smallRoad, 'small-road');
+    renderDerivedRoadUI('cockroachPigDisplay', derivedRoads.cockroachPig, 'cockroach-pig');
+    updatePredictionProbes(bigRoad);
+    updateStatsUI(state.history);
+}
+function renderBeadPlateUI(data) {
+    const container = document.getElementById('beadPlateDisplay'); container.innerHTML = '';
+    const maxRows = 6; let currentCol = document.createElement('div'); currentCol.className = 'road-col';
+    data.forEach((item, index) => {
+        if (index > 0 && index % maxRows === 0) { container.appendChild(currentCol); currentCol = document.createElement('div'); currentCol.className = 'road-col'; }
+        const itemDiv = document.createElement('div');
+        const colorClass = item.winner === 'P' ? 'bead-plate-item-p' : item.winner === 'B' ? 'bead-plate-item-b' : 'road-item-t';
+        itemDiv.className = `road-item ${colorClass}`; itemDiv.textContent = item.winner;
+        if (item.pPair) itemDiv.innerHTML += '<div class="pair-dot p-pair"></div>'; if (item.bPair) itemDiv.innerHTML += '<div class="pair-dot b-pair"></div>';
+        currentCol.appendChild(itemDiv);
+    });
+    if (currentCol.hasChildNodes()) container.appendChild(currentCol); container.scrollLeft = container.scrollWidth;
+}
+function renderBigRoadUI(columns) {
+    const container = document.getElementById('bigRoadDisplay'); container.innerHTML = '';
+    columns.forEach(colData => {
+        const colDiv = document.createElement('div'); colDiv.className = 'road-col';
+        colData.forEach(item => {
+            const itemDiv = document.createElement('div'); itemDiv.className = `road-item road-item-big road-item-${item.winner.toLowerCase()}`;
+            if (item.pPair) itemDiv.innerHTML += '<div class="pair-dot p-pair"></div>'; if (item.bPair) itemDiv.innerHTML += '<div class="pair-dot b-pair"></div>';
+            if (item.ties > 0) { itemDiv.innerHTML += `<div class="tie-slash"></div>`; if(item.ties > 1) itemDiv.innerHTML += `<span class="absolute text-xs font-bold text-white">${item.ties}</span>`; }
+            colDiv.appendChild(itemDiv);
+        });
+        container.appendChild(colDiv);
+    });
+    container.scrollLeft = container.scrollWidth;
+}
+function renderDerivedRoadUI(containerId, data, type) {
+    const container = document.getElementById(containerId); container.innerHTML = ''; if (data.length === 0) return;
+    const columns = roadmapGenerator.generateBigRoad(data);
+    columns.forEach(colData => {
+        const colDiv = document.createElement('div'); colDiv.className = 'road-col !grid-auto-rows-[10px]';
+        colData.forEach(item => {
+            const itemDiv = document.createElement('div'); const color = item.winner === 'P' ? 'p' : 'b';
+            itemDiv.className = `derived-item ${type}-${color}`; colDiv.appendChild(itemDiv);
+        });
+        container.appendChild(colDiv);
+    });
+    container.scrollLeft = container.scrollWidth;
+}
+function updatePredictionProbes(bigRoad) {
+    const pAskContainer = document.getElementById('pAskDisplay'); const bAskContainer = document.getElementById('bAskDisplay');
+    pAskContainer.innerHTML = ''; bAskContainer.innerHTML = '';
+    const pProbeRoads = roadmapGenerator.generateDerivedRoads(bigRoad, 'P');
+    const pBigEyeNext = pProbeRoads.bigEyeBoy.pop(); const pSmallNext = pProbeRoads.smallRoad.pop(); const pCockroachNext = pProbeRoads.cockroachPig.pop();
+    let pAskHTML = '<div class="road-col !grid-auto-rows-[10px]">';
+    if (pBigEyeNext) pAskHTML += `<div class="derived-item big-eye-boy-${pBigEyeNext.winner.toLowerCase()}"></div>`;
+    if (pSmallNext) pAskHTML += `<div class="derived-item small-road-${pSmallNext.winner.toLowerCase()}"></div>`;
+    if (pCockroachNext) pAskHTML += `<div class="derived-item cockroach-pig-${pCockroachNext.winner.toLowerCase()}"></div>`;
+    pAskContainer.innerHTML = pAskHTML + '</div>';
+    const bProbeRoads = roadmapGenerator.generateDerivedRoads(bigRoad, 'B');
+    const bBigEyeNext = bProbeRoads.bigEyeBoy.pop(); const bSmallNext = bProbeRoads.smallRoad.pop(); const bCockroachNext = bProbeRoads.cockroachPig.pop();
+    let bAskHTML = '<div class="road-col !grid-auto-rows-[10px]">';
+    if (bBigEyeNext) bAskHTML += `<div class="derived-item big-eye-boy-${bBigEyeNext.winner.toLowerCase()}"></div>`;
+    if (bSmallNext) bAskHTML += `<div class="derived-item small-road-${bSmallNext.winner.toLowerCase()}"></div>`;
+    if (bCockroachNext) bAskHTML += `<div class="derived-item cockroach-pig-${bCockroachNext.winner.toLowerCase()}"></div>`;
+    bAskContainer.innerHTML = bAskHTML + '</div>';
+}
+function updateStatsUI(history) {
+    const stats = { P: 0, B: 0, T: 0, pPair: 0, bPair: 0 };
+    history.forEach(h => { stats[h.winner] = (stats[h.winner] || 0) + 1; if(h.pPair) stats.pPair++; if(h.bPair) stats.bPair++; });
+    document.getElementById('statsContainer').innerHTML = `<div>C: ${stats.P}</div><div>B: ${stats.B}</div><div>T: ${stats.T}</div><div>CĐ: ${stats.pPair}</div><div>BĐ: ${stats.bPair}</div>`;
+}
+function renderStatsAndChart() {
+    const statsContainer = document.getElementById('predictionStats');
+    const chartContainer = document.getElementById('predictionChart');
+    if (!statsContainer || !chartContainer) return;
+    const wins = state.predictions.filter(p => p.outcome === 'win').length;
+    const losses = state.predictions.length - wins;
+    const total = state.predictions.length;
+    const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : "0.0";
+    statsContainer.innerHTML = `
+        <div><p class="text-sm text-gray-400">Đúng</p><p class="text-2xl font-bold text-green-400">${wins}</p></div>
+        <div><p class="text-sm text-gray-400">Sai</p><p class="text-2xl font-bold text-red-400">${losses}</p></div>
+        <div><p class="text-sm text-gray-400">Tổng</p><p class="text-2xl font-bold">${total}</p></div>
+        <div><p class="text-sm text-gray-400">Tỷ Lệ</p><p class="text-2xl font-bold text-yellow-400">${winRate}%</p></div>`;
+    chartContainer.innerHTML = '';
+    state.predictions.forEach(p => {
+        const bar = document.createElement('div');
+        const isWin = p.outcome === 'win';
+        bar.className = `flex-shrink-0 w-2.5 rounded-sm transition-all duration-300 ${isWin ? 'h-full bg-green-500' : 'h-1/3 bg-red-500'}`;
+        bar.title = `Đề xuất: ${p.prediction}, Thực tế: ${p.actual} - ${isWin ? 'Đúng' : 'Sai'}`;
+        chartContainer.appendChild(bar);
+    });
+    chartContainer.scrollLeft = chartContainer.scrollWidth;
+}
+
+// --- CORE ACTIONS ---
+function addResult(winner) {
+    if (state.isAnalyzing) return;
+    const pPair = document.getElementById('playerPair').checked;
+    const bPair = document.getElementById('bankerPair').checked;
+    
+    if (state.lastPrediction && winner !== 'T') {
+        const primaryPrediction = state.lastPrediction.next_hand.prediction;
+        const outcome = primaryPrediction === winner ? 'win' : 'loss';
+        state.predictions.push({ prediction: primaryPrediction, actual: winner, outcome });
+        state.lastPrediction = null; 
+    }
+    
+    state.history.push({ winner, pPair, bPair });
+    document.getElementById('totalGames').textContent = state.history.length;
+    document.getElementById('playerPair').checked = false;
+    document.getElementById('bankerPair').checked = false;
+    renderAllRoads();
+    renderStatsAndChart();
+    saveState();
+    triggerAIAnalysis();
+}
+function undoLast() {
+    if (state.isAnalyzing) return;
+    if (state.lastPrediction) {
+        state.lastPrediction = null;
+    } else if (state.history.length > 0) {
+        state.history.pop();
+        if (state.predictions.length > 0 && state.predictions[state.predictions.length - 1].actual) {
+             state.predictions.pop();
+        }
+    }
+    updateAnalysisUI('<p class="text-gray-400 text-center">Hoàn tác thành công. Sẵn sàng cho lượt tiếp theo.</p>');
+    document.getElementById('totalGames').textContent = state.history.length;
+    renderAllRoads();
+    renderStatsAndChart();
+    saveState();
+}
+function clearHistory() {
+    if (confirm('Bạn có chắc muốn xóa toàn bộ lịch sử và thống kê không?')) {
+        state.history = []; state.predictions = []; state.lastPrediction = null;
+        document.getElementById('totalGames').textContent = 0;
+        renderAllRoads();
+        renderStatsAndChart();
+        updateAnalysisUI('<p class="text-gray-400 text-center">Lịch sử đã được xóa. Hãy nhập kết quả để bắt đầu.</p>');
+        saveState();
+    }
+}
+
+// --- AI & SETTINGS ---
+function openSettingsModal() {
+    const modal = document.getElementById('settingsModal'); modal.classList.remove('hidden');
+    modal.innerHTML = `<div class="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md"> <div class="flex justify-between items-center mb-6"> <h2 class="text-2xl font-bold text-blue-300">Cài Đặt</h2> <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-white text-3xl">&times;</button> </div> <div> <label for="apiKeyInput" class="block text-sm font-medium text-gray-300 mb-2">Gemini API Key</label> <input type="password" id="apiKeyInput" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${state.apiKey}"> <p class="text-xs text-gray-500 mt-2">API Key được lưu trên trình duyệt. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">Lấy API Key</a>.</p> </div> <div class="mt-8 flex justify-end gap-4"> <button onclick="closeSettingsModal()" class="btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Hủy</button> <button onclick="saveSettings()" class="btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg">Lưu</button> </div> </div>`;
+}
+function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+function saveSettings() {
+    state.apiKey = document.getElementById('apiKeyInput').value.trim();
+    saveState(); closeSettingsModal();
+}
+function saveState() { localStorage.setItem('baccaratAI_state_v5', JSON.stringify(state)); }
+function loadState() {
+    const savedState = localStorage.getItem('baccaratAI_state_v5');
+    if (savedState) { Object.assign(state, JSON.parse(savedState)); }
+}
+async function triggerAIAnalysis() {
+    if (state.isAnalyzing) return;
+    if (!state.apiKey) { updateAnalysisUI(`<div class="text-center"><p class="text-yellow-400 font-semibold">Vui lòng nhập Gemini API Key!</p><p class="text-gray-400 mt-2 text-sm">Click icon <i class="fas fa-cog"></i> để cài đặt.</p></div>`); return; }
+    if (state.history.length < 5) { updateAnalysisUI(`<p class="text-gray-400 text-center">Cần ít nhất 5 ván để bắt đầu phân tích...</p>`); return; }
+    
+    state.isAnalyzing = true;
+    updateAnalysisUI(`<div class="flex flex-col items-center justify-center h-full"><div class="w-8 h-8 border-4 border-t-blue-500 border-gray-600 rounded-full animate-spin"></div><p class="text-gray-400 mt-3 animate-pulse">Gemini đang phân tích kịch bản...</p></div>`);
+    
+    try {
+        const response = await fetch(`${GEMINI_API_URL}${state.apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: createPrompt() }] }], systemInstruction: { parts: [{text: "You are a world-class Baccarat analyst. Your response MUST be in JSON format and NOTHING else. The JSON must contain three top-level keys: 'next_hand', 'if_next_is_P', and 'if_next_is_B'. Each of these keys must contain an object with two keys: 'prediction' (either 'P' or 'B') and 'reasoning' (a concise explanation in Vietnamese, max 2-3 sentences). 'next_hand' is your primary prediction. 'if_next_is_P' is your prediction for the second hand *if* the first hand is Player. 'if_next_is_B' is your prediction for the second hand *if* the first hand is Banker."}] } })
+        });
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        const result = await response.json();
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("No content in API response.");
+        
+        const responseData = JSON.parse(text.replace(/```json|```/g, ''));
+        if (!responseData.next_hand || !responseData.if_next_is_P || !responseData.if_next_is_B) {
+            throw new Error("Invalid JSON structure from API.");
+        }
+        state.lastPrediction = responseData;
+        updateAnalysisUI(renderMultiStepPrediction(state.lastPrediction));
+
+    } catch (error) {
+        console.error("AI Analysis Error:", error);
+        updateAnalysisUI(`<div class="text-center text-red-400"><p class="font-semibold">Lỗi phân tích!</p><p class="text-sm mt-2">${error.message}.</p></div>`);
+        state.lastPrediction = null;
+    } finally {
+        state.isAnalyzing = false; 
+        saveState();
+    }
+}
+
+function createPrompt() {
+    const historyString = state.history.map(h => h.winner).join(', ');
+    const bigRoad = roadmapGenerator.generateBigRoad(state.history);
+    const derivedRoads = roadmapGenerator.generateDerivedRoads(bigRoad);
+    const bigRoadText = bigRoad.map(col => col.map(c => c.winner).join('')).join(' | ');
+    const bigEyeBoyText = derivedRoads.bigEyeBoy.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    const smallRoadText = derivedRoads.smallRoad.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    const cockroachPigText = derivedRoads.cockroachPig.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    return `Baccarat Analysis: History: ${historyString}. Big Road: ${bigRoadText}. Big Eye Boy (R=Pattern, B=Choppy): ${bigEyeBoyText}. Small Road (R=Pattern, B=Choppy): ${smallRoadText}. Cockroach Pig (R=Pattern, B=Choppy): ${cockroachPigText}. Predict the next result (P or B). Also, provide conditional predictions for the *second* hand: one assuming the next hand is Player, and one assuming it's Banker. Follow the requested JSON format.`;
+}
+
+function renderMultiStepPrediction(data) {
+    const primary = data.next_hand;
+    const ifP = data.if_next_is_P;
+    const ifB = data.if_next_is_B;
+
+    const primaryColor = primary.prediction === 'P' ? 'blue' : 'red';
+    const ifPColor = ifP.prediction === 'P' ? 'text-blue-400' : 'text-red-400';
+    const ifBColor = ifB.prediction === 'P' ? 'text-blue-400' : 'text-red-400';
+
+    const glowClass = primary.prediction === 'P' ? 'card-glow-p' : 'card-glow-b';
+    document.getElementById('analysis-card').classList.add(glowClass);
+
+    return `
+        <div class="text-center bg-gray-900/70 py-3 rounded-lg border-2 border-${primaryColor}-500">
+            <p class="text-base text-gray-400">Đề Xuất Ván Tới</p>
+            <p class="text-4xl font-bold text-${primaryColor}-400 my-1">${primary.prediction === 'P' ? 'CON' : 'CÁI'}</p>
+            <p class="text-xs text-gray-500 px-2">${primary.reasoning}</p>
+        </div>
+        <div class="mt-3 bg-gray-900/50 p-3 rounded-lg">
+             <h4 class="font-semibold text-gray-300 mb-3 text-center text-sm">Kịch Bản Cho Ván Sau Đó</h4>
+             <div class="space-y-3 text-sm">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 mt-1 w-20 text-center"><span class="font-bold text-blue-400 bg-blue-900/50 px-2 py-1 rounded">NẾU RA CON</span></div>
+                    <div class="flex-1">
+                        <p class="text-gray-300">→ AI dự đoán: <span class="font-bold ${ifPColor}">${ifP.prediction === 'P' ? 'CON' : 'CÁI'}</span></p>
+                        <p class="text-xs text-gray-500 mt-1 italic">${ifP.reasoning}</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                     <div class="flex-shrink-0 mt-1 w-20 text-center"><span class="font-bold text-red-400 bg-red-900/50 px-2 py-1 rounded">NẾU RA CÁI</span></div>
+                     <div class="flex-1">
+                        <p class="text-gray-300">→ AI dự đoán: <span class="font-bold ${ifBColor}">${ifB.prediction === 'P' ? 'CON' : 'CÁI'}</span></p>
+                         <p class="text-xs text-gray-500 mt-1 italic">${ifB.reasoning}</p>
+                    </div>
+                </div>
+             </div>
+        </div>
+    `;
+}
+
+function updateAnalysisUI(content) {
+    const analysisResultDiv = document.getElementById('analysisResult');
+    const analysisCard = document.getElementById('analysis-card');
+    analysisCard.classList.remove('card-glow-p', 'card-glow-b', 'card-glow-wait');
+    analysisResultDiv.innerHTML = content;
+}
+
+// --- INITIALIZATION ---
+function initializeApp() {
+    loadState();
+    document.getElementById('totalGames').textContent = state.history.length;
+    renderAllRoads();
+    renderStatsAndChart();
+
+    if (state.lastPrediction && state.lastPrediction.next_hand) {
+        updateAnalysisUI(renderMultiStepPrediction(state.lastPrediction));
+    } else {
+        updateAnalysisUI(state.history.length > 0 ? '<p class="text-gray-400 text-center">Sẵn sàng nhận kịch bản từ AI.</p>' : '<p class="text-gray-400 text-center">Chào mừng! Hãy nhập kết quả để bắt đầu.</p>');
+    }
+}
+document.addEventListener('DOMContentLoaded', initializeApp);
+</script>
 </body>
 </html>
+
