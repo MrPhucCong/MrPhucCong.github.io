@@ -97,8 +97,6 @@
             background-color: currentColor;
             background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
         }
-         @keyframes pulse-opacity { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        .pulse-subtle { animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
 <body class="p-4 md:p-8 bg-gray-900">
@@ -110,7 +108,7 @@
         <!-- Header -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
             <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-red-400">Hệ Thống Phân Tích Baccarat Toàn Diện</h1>
-            <p class="text-gray-400 mt-2">Nâng cấp: Phân Tích Lũy Tiến Tức Thời</p>
+            <p class="text-gray-400 mt-2">Nâng cấp: Đề Xuất Tức Thời</p>
         </div>
         
         <!-- Controls -->
@@ -185,7 +183,7 @@
     <div class="space-y-6">
         <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500 sticky top-6">
             <h2 class="text-xl font-semibold mb-4 text-yellow-300 flex items-center gap-2">
-                <i class="fa-solid fa-brain"></i> Phân Tích Kịch Bản & Đề Xuất
+                <i class="fa-solid fa-brain"></i> Phân Tích & Đề Xuất
             </h2>
             <div id="analysisResult" class="space-y-4 min-h-[220px] flex flex-col justify-center">
                 <!-- AI content goes here -->
@@ -193,7 +191,7 @@
         </div>
         
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-            <h2 class="text-xl font-semibold mb-4 text-blue-300">📊 Thống Kê Đề Xuất (Ván 1)</h2>
+            <h2 class="text-xl font-semibold mb-4 text-blue-300">📊 Thống Kê Đề Xuất</h2>
             <div id="predictionStats" class="grid grid-cols-4 gap-2 text-center mb-4"></div>
             <div id="predictionChart" class="w-full h-24 bg-gray-900 rounded-lg p-2 flex items-end gap-1 overflow-x-auto"></div>
         </div>
@@ -208,8 +206,8 @@
 let state = {
     history: [],
     apiKey: '',
-    isAnalyzing: false, // General analysis lock
-    lastPrediction: null, // Holds the full prediction object { next_hand, if_next_is_P, if_next_is_B }
+    isAnalyzing: false, 
+    lastPrediction: null, // { prediction: 'P', reasoning: '...' }
     predictions: [], 
 };
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
@@ -264,7 +262,7 @@ class BaccaratRoadmapGenerator {
 }
 const roadmapGenerator = new BaccaratRoadmapGenerator();
 
-// --- UI RENDERING (unchanged except renderMultiStepPrediction) ---
+// --- UI RENDERING ---
 function renderAllRoads() {
     const bigRoad = roadmapGenerator.generateBigRoad(state.history);
     renderBeadPlateUI(state.history);
@@ -370,9 +368,8 @@ function addResult(winner) {
     const bPair = document.getElementById('bankerPair').checked;
     
     if (state.lastPrediction && winner !== 'T') {
-        const primaryPrediction = state.lastPrediction.next_hand.prediction;
-        const outcome = primaryPrediction === winner ? 'win' : 'loss';
-        state.predictions.push({ prediction: primaryPrediction, actual: winner, outcome });
+        const outcome = state.lastPrediction.prediction === winner ? 'win' : 'loss';
+        state.predictions.push({ prediction: state.lastPrediction.prediction, actual: winner, outcome });
     }
     
     state.lastPrediction = null; 
@@ -383,7 +380,7 @@ function addResult(winner) {
     renderAllRoads();
     renderStatsAndChart();
     saveState();
-    triggerPrimaryAnalysis();
+    triggerAIAnalysis();
 }
 function undoLast() {
     if (state.isAnalyzing) return;
@@ -412,7 +409,7 @@ function clearHistory() {
     }
 }
 
-// --- AI & SETTINGS (Progressive Analysis) ---
+// --- AI & SETTINGS ---
 function openSettingsModal() {
     const modal = document.getElementById('settingsModal'); modal.classList.remove('hidden');
     modal.innerHTML = `<div class="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md"> <div class="flex justify-between items-center mb-6"> <h2 class="text-2xl font-bold text-blue-300">Cài Đặt</h2> <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-white text-3xl">&times;</button> </div> <div> <label for="apiKeyInput" class="block text-sm font-medium text-gray-300 mb-2">Gemini API Key</label> <input type="password" id="apiKeyInput" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${state.apiKey}"> <p class="text-xs text-gray-500 mt-2">API Key được lưu trên trình duyệt. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">Lấy API Key</a>.</p> </div> <div class="mt-8 flex justify-end gap-4"> <button onclick="closeSettingsModal()" class="btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Hủy</button> <button onclick="saveSettings()" class="btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg">Lưu</button> </div> </div>`;
@@ -422,22 +419,22 @@ function saveSettings() {
     state.apiKey = document.getElementById('apiKeyInput').value.trim();
     saveState(); closeSettingsModal();
 }
-function saveState() { localStorage.setItem('baccaratAI_state_v7', JSON.stringify(state)); }
+function saveState() { localStorage.setItem('baccaratAI_state_v8', JSON.stringify(state)); }
 function loadState() {
-    const savedState = localStorage.getItem('baccaratAI_state_v7');
+    const savedState = localStorage.getItem('baccaratAI_state_v8');
     if (savedState) { Object.assign(state, JSON.parse(savedState)); }
 }
 
-async function triggerPrimaryAnalysis() {
+async function triggerAIAnalysis() {
     if (state.isAnalyzing) return;
     if (!state.apiKey) { updateAnalysisUI(`<div class="text-center"><p class="text-yellow-400 font-semibold">Vui lòng nhập Gemini API Key!</p><p class="text-gray-400 mt-2 text-sm">Click icon <i class="fas fa-cog"></i> để cài đặt.</p></div>`); return; }
     if (state.history.length < 5) { updateAnalysisUI(`<p class="text-gray-400 text-center">Cần ít nhất 5 ván để bắt đầu phân tích...</p>`); return; }
     
     state.isAnalyzing = true;
-    updateAnalysisUI(`<div class="flex flex-col items-center justify-center h-full"><div class="w-8 h-8 border-4 border-t-blue-500 border-gray-600 rounded-full animate-spin"></div><p class="text-gray-400 mt-3 animate-pulse">Đang lấy đề xuất nhanh...</p></div>`);
+    updateAnalysisUI(`<div class="flex flex-col items-center justify-center h-full"><div class="w-8 h-8 border-4 border-t-blue-500 border-gray-600 rounded-full animate-spin"></div><p class="text-gray-400 mt-3 animate-pulse">Gemini đang phân tích...</p></div>`);
     
     try {
-        const prompt = createPrompt(false); // Create simple prompt
+        const prompt = createPrompt();
         const response = await fetch(`${GEMINI_API_URL}${state.apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{text: "You are a world-class Baccarat analyst. Analyze the provided game history to predict the next outcome (Player or Banker). Your response MUST be in JSON format and NOTHING else. The JSON must contain: 'prediction' (either 'P' or 'B'), and 'reasoning' (a concise explanation in Vietnamese, max 2 sentences)."}] } })
@@ -448,106 +445,47 @@ async function triggerPrimaryAnalysis() {
         if (!text) throw new Error("No content in API response.");
         
         const responseData = JSON.parse(text.replace(/```json|```/g, ''));
-        state.lastPrediction = { next_hand: responseData };
-        updateAnalysisUI(renderMultiStepPrediction(state.lastPrediction));
-        triggerConditionalAnalysis(); // Automatically trigger the second step
+        state.lastPrediction = responseData;
+        updateAnalysisUI(renderSinglePrediction(state.lastPrediction));
+
     } catch (error) {
-        console.error("Primary Analysis Error:", error);
+        console.error("AI Analysis Error:", error);
         updateAnalysisUI(`<div class="text-center text-red-400"><p class="font-semibold">Lỗi phân tích!</p><p class="text-sm mt-2">${error.message}.</p></div>`);
-        state.isAnalyzing = false;
-    }
-}
-
-async function triggerConditionalAnalysis() {
-    // This runs in the background, no need to set the global isAnalyzing flag again
-    try {
-        const prompt = createPrompt(true); // Create complex prompt
-        const response = await fetch(`${GEMINI_API_URL}${state.apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{text: "You are a Baccarat analyst. Based on the history, provide conditional predictions. Your response MUST be in JSON format and NOTHING else. The JSON must contain two top-level keys: 'if_P_then', and 'if_B_then'. Each key must contain an object with 'prediction' (either 'P' or 'B') and 'reasoning' (a concise Vietnamese explanation)."}] } })
-        });
-        if (!response.ok) return; // Fail silently
-        const result = await response.json();
-        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) return; // Fail silently
-
-        const responseData = JSON.parse(text.replace(/```json|```/g, ''));
-        if (state.lastPrediction && responseData.if_P_then && responseData.if_B_then) {
-            state.lastPrediction.if_next_is_P = responseData.if_P_then;
-            state.lastPrediction.if_next_is_B = responseData.if_B_then;
-            updateAnalysisUI(renderMultiStepPrediction(state.lastPrediction));
-            saveState();
-        }
-    } catch (error) {
-        console.error("Conditional Analysis Error:", error);
-        // Fail silently, the user already has the primary prediction.
+        state.lastPrediction = null;
     } finally {
-        state.isAnalyzing = false; // Release the lock after all analysis is done or failed.
+        state.isAnalyzing = false;
+        saveState();
     }
 }
 
-function createPrompt(isConditional) {
+function createPrompt() {
     const historyString = state.history.map(h => h.winner).join(', ');
     const bigRoad = roadmapGenerator.generateBigRoad(state.history);
     const derivedRoads = roadmapGenerator.generateDerivedRoads(bigRoad);
     const bigRoadText = bigRoad.map(col => col.map(c => c.winner).join('')).join(' | ');
-    const baseText = `Baccarat Analysis: History: ${historyString}. Big Road: ${bigRoadText}.`;
-    if (isConditional) {
-        return `${baseText} Provide conditional predictions for the SECOND hand: one assuming the NEXT hand is Player, and one assuming it's Banker.`;
-    }
-    return `${baseText} Predict the NEXT result (P or B).`;
+    const bigEyeBoyText = derivedRoads.bigEyeBoy.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    const smallRoadText = derivedRoads.smallRoad.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    const cockroachPigText = derivedRoads.cockroachPig.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    return `Baccarat Analysis: History: ${historyString}. Big Road: ${bigRoadText}. Big Eye Boy (R=Pattern, B=Choppy): ${bigEyeBoyText}. Small Road (R=Pattern, B=Choppy): ${smallRoadText}. Cockroach Pig (R=Pattern, B=Choppy): ${cockroachPigText}. Predict NEXT result (P or B).`;
 }
 
-function renderMultiStepPrediction(data) {
-    const primary = data.next_hand;
-    const ifP = data.if_next_is_P;
-    const ifB = data.if_next_is_B;
-
-    const primaryColor = primary.prediction === 'P' ? 'blue' : 'red';
-    const glowClass = primary.prediction === 'P' ? 'card-glow-p' : 'card-glow-b';
-    document.getElementById('analysis-card').classList.add(glowClass);
-
-    let conditionalHtml = `
-        <div class="mt-3 bg-gray-900/50 p-3 rounded-lg text-center">
-             <div class="flex items-center justify-center gap-2 text-sm text-gray-400 pulse-subtle">
-                <div class="w-4 h-4 border-2 border-t-blue-500 border-gray-600 rounded-full animate-spin" style="animation-duration: 1.5s;"></div>
-                <span>Đang tính toán kịch bản...</span>
-             </div>
-        </div>
-    `;
-
-    if (ifP && ifB) {
-        const ifPColor = ifP.prediction === 'P' ? 'text-blue-400' : 'text-red-400';
-        const ifBColor = ifB.prediction === 'P' ? 'text-blue-400' : 'text-red-400';
-        conditionalHtml = `
-            <div class="mt-3 bg-gray-900/50 p-3 rounded-lg">
-                <h4 class="font-semibold text-gray-300 mb-3 text-center text-sm">Kịch Bản Cho Ván Sau Đó</h4>
-                <div class="space-y-3 text-sm">
-                    <div class="flex items-start gap-3">
-                        <div class="flex-shrink-0 mt-1 w-20 text-center"><span class="font-bold text-blue-400 bg-blue-900/50 px-2 py-1 rounded">NẾU RA CON</span></div>
-                        <div class="flex-1">
-                            <p class="text-gray-300">→ AI dự đoán: <span class="font-bold ${ifPColor}">${ifP.prediction === 'P' ? 'CON' : 'CÁI'}</span></p>
-                            <p class="text-xs text-gray-500 mt-1 italic">${ifP.reasoning}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <div class="flex-shrink-0 mt-1 w-20 text-center"><span class="font-bold text-red-400 bg-red-900/50 px-2 py-1 rounded">NẾU RA CÁI</span></div>
-                        <div class="flex-1">
-                            <p class="text-gray-300">→ AI dự đoán: <span class="font-bold ${ifBColor}">${ifB.prediction === 'P' ? 'CON' : 'CÁI'}</span></p>
-                            <p class="text-xs text-gray-500 mt-1 italic">${ifB.reasoning}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-    }
+function renderSinglePrediction(data) {
+    const { prediction, reasoning } = data;
+    const color = prediction === 'P' ? 'blue' : 'red';
+    const glowClass = prediction === 'P' ? 'card-glow-p' : 'card-glow-b';
+    const analysisCard = document.getElementById('analysis-card');
+    analysisCard.classList.add(glowClass);
 
     return `
-        <div class="text-center bg-gray-900/70 py-3 rounded-lg border-2 border-${primaryColor}-500">
-            <p class="text-base text-gray-400">Đề Xuất Ván Tới</p>
-            <p class="text-4xl font-bold text-${primaryColor}-400 my-1">${primary.prediction === 'P' ? 'CON' : 'CÁI'}</p>
-            <p class="text-xs text-gray-500 px-2">${primary.reasoning}</p>
+        <div class="bg-gray-700/50 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold text-gray-200 mb-2">Lý Do Đề Xuất:</h4>
+            <p class="text-gray-300 text-sm leading-relaxed">${reasoning}</p>
         </div>
-        ${conditionalHtml}
+        <div class="text-center bg-gray-900/70 py-4 rounded-lg border-2 border-${color}-500">
+            <p class="text-lg text-gray-400">AI Đề xuất:</p>
+            <p class="text-4xl font-bold text-${color}-400 my-1">${prediction === 'P' ? 'CON' : 'CÁI'}</p>
+            <p class="text-xs text-yellow-400 mt-1 animate-pulse">Chờ kết quả ván tiếp theo...</p>
+        </div>
     `;
 }
 
@@ -565,12 +503,8 @@ function initializeApp() {
     renderAllRoads();
     renderStatsAndChart();
 
-    if (state.lastPrediction && state.lastPrediction.next_hand) {
-        updateAnalysisUI(renderMultiStepPrediction(state.lastPrediction));
-        // If the last session was closed mid-analysis, try to complete it
-        if (!state.lastPrediction.if_next_is_P) {
-            triggerConditionalAnalysis();
-        }
+    if (state.lastPrediction) {
+        updateAnalysisUI(renderSinglePrediction(state.lastPrediction));
     } else {
         updateAnalysisUI(state.history.length > 4 ? '<p class="text-gray-400 text-center">Sẵn sàng nhận đề xuất tự động.</p>' : '<p class="text-gray-400 text-center">Chào mừng! Hãy nhập ít nhất 5 ván để bắt đầu.</p>');
     }
