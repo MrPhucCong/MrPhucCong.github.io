@@ -223,7 +223,6 @@ let state = {
     lastPrediction: null, // { prediction: 'P', reasoning: '...' }
     predictions: [], // { prediction: 'P', actual: 'B', outcome: 'loss' }
 };
-// *** OPTIMIZATION: Switched to the faster Gemini 1.5 Flash model ***
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=';
 
 // --- ROADMAP LOGIC ---
@@ -481,7 +480,6 @@ async function triggerAIAnalysis() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ parts: [{ text: createPrompt() }] }],
-                // *** OPTIMIZATION: More concise system instruction ***
                 systemInstruction: { parts: [{text: "You are a Baccarat analyst. Analyze the history and predict the next result. Response MUST be a single JSON object with two keys: 'prediction' ('P' or 'B') and 'reasoning' (a brief explanation in Vietnamese)."}] }
             })
         });
@@ -503,16 +501,22 @@ async function triggerAIAnalysis() {
     }
 }
 
-// *** OPTIMIZATION: More concise and efficient prompt ***
+// *** RE-ENHANCED PROMPT: Add derived roads back for deeper analysis ***
 function createPrompt() {
-    // Analyze up to the last 60 hands to keep the prompt focused and fast
     const recentHistory = state.history.slice(-60);
-    const historyString = recentHistory.map(h => h.winner).join(''); // Use a compact string 'PBPB'
+    const historyString = recentHistory.map(h => h.winner).join('');
+    
     const bigRoad = roadmapGenerator.generateBigRoad(recentHistory);
     const bigRoadText = bigRoad.map(col => col.map(c => c.winner).join('')).join('|');
 
-    // Short, data-focused prompt
-    return `Analyze Baccarat shoe. Predict next (P or B). History: ${historyString}. Big Road: ${bigRoadText}.`;
+    const derivedRoads = roadmapGenerator.generateDerivedRoads(bigRoad);
+    // Use R for Red (Pattern) and B for Blue (Choppy) for derived roads
+    const bigEyeBoyText = derivedRoads.bigEyeBoy.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    const smallRoadText = derivedRoads.smallRoad.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+    const cockroachPigText = derivedRoads.cockroachPig.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
+
+    // A balanced prompt with full context
+    return `Analyze Baccarat. Predict next (P or B). History: ${historyString}. BigRoad: ${bigRoadText}. BigEyeBoy(R=Pattern): ${bigEyeBoyText}. SmallRoad(R=Pattern): ${smallRoadText}. CockroachPig(R=Pattern): ${cockroachPigText}.`;
 }
 
 function updateAnalysisUI(content) {
@@ -544,3 +548,4 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
 </body>
 </html>
+
