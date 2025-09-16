@@ -23,6 +23,10 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .btn:active:not(:disabled) { transform: translateY(1px); }
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
         .card-glow-p { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
         .card-glow-b { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
         .card-glow-wait { box-shadow: 0 0 20px rgba(156, 163, 175, 0.4); }
@@ -137,6 +141,18 @@
                     <span>Cái Đôi</span>
                 </label>
             </div>
+            
+            <!-- Auto Suggest Toggle -->
+            <div class="flex items-center justify-center my-6">
+                <label for="autoSuggestToggle" class="flex items-center cursor-pointer">
+                    <span class="mr-3 text-gray-300 font-medium">Tự Động Đề Xuất</span>
+                    <div class="relative">
+                        <input id="autoSuggestToggle" type="checkbox" class="sr-only peer" onchange="handleAutoSuggestToggle()">
+                        <div class="w-14 h-8 bg-gray-500 rounded-full shadow-inner peer-checked:bg-blue-600 transition-colors"></div>
+                        <div class="absolute left-1 top-1 w-6 h-6 bg-white rounded-full shadow transition-transform peer-checked:translate-x-6"></div>
+                    </div>
+                </label>
+            </div>
 
             <div class="flex gap-4">
                 <button onclick="undoLast()" class="btn flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg">↩️ Hoàn Tác</button>
@@ -177,14 +193,14 @@
     </div>
 
     <!-- Right Column: Analysis & Stats -->
-    <div class="space-y-6">
-        <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500 sticky top-6">
+    <div class="space-y-6 lg:sticky lg:top-6">
+        <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500">
             <h2 class="text-xl font-semibold mb-4 text-yellow-300 flex items-center gap-2">
                 <i class="fa-solid fa-brain"></i> Phân Tích & Đề Xuất từ Gemini AI
             </h2>
             <div id="analysisResult" class="space-y-4 min-h-[160px]"></div>
              <div class="mt-4">
-                <button id="analyzeBtn" onclick="triggerAIAnalysis()" class="btn w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button id="analyzeBtn" onclick="triggerAIAnalysis()" class="btn w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Lấy Đề Xuất
                 </button>
             </div>
@@ -222,6 +238,7 @@ let state = {
     isAnalyzing: false,
     lastPrediction: null, // { prediction: 'P', reasoning: '...' }
     predictions: [], // { prediction: 'P', actual: 'B', outcome: 'loss' }
+    isAutoSuggest: false, // New state for auto-suggestion feature
 };
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=';
 
@@ -275,7 +292,21 @@ class BaccaratRoadmapGenerator {
 }
 const roadmapGenerator = new BaccaratRoadmapGenerator();
 
-// --- UI RENDERING ---
+// --- UI RENDERING & CONTROLS ---
+function updateAnalyzeButtonState() {
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    analyzeBtn.disabled = state.isAutoSuggest || state.isAnalyzing || !!state.lastPrediction;
+}
+
+function handleAutoSuggestToggle() {
+    state.isAutoSuggest = document.getElementById('autoSuggestToggle').checked;
+    saveState();
+    updateAnalyzeButtonState();
+    if (state.isAutoSuggest && state.history.length >= 5 && !state.isAnalyzing && !state.lastPrediction) {
+        triggerAIAnalysis();
+    }
+}
+
 function renderAllRoads() {
     const bigRoad = roadmapGenerator.generateBigRoad(state.history);
     renderBeadPlateUI(state.history);
@@ -331,8 +362,6 @@ function renderDerivedRoadUI(containerId, data, type) {
 function updatePredictionProbes(bigRoad) {
     const pAskContainer = document.getElementById('pAskDisplay'); const bAskContainer = document.getElementById('bAskDisplay');
     pAskContainer.innerHTML = ''; bAskContainer.innerHTML = '';
-    
-    // Player Probe
     const pProbeRoads = roadmapGenerator.generateDerivedRoads(bigRoad, 'P');
     const pBigEyeNext = pProbeRoads.bigEyeBoy.pop(); const pSmallNext = pProbeRoads.smallRoad.pop(); const pCockroachNext = pProbeRoads.cockroachPig.pop();
     let pAskHTML = '<div class="road-col !grid-auto-rows-[10px]">';
@@ -340,8 +369,6 @@ function updatePredictionProbes(bigRoad) {
     if (pSmallNext) pAskHTML += `<div class="derived-item small-road-${pSmallNext.winner.toLowerCase()}" title="Small Road: ${pSmallNext.winner === 'P' ? 'Pattern' : 'Choppy'}"></div>`;
     if (pCockroachNext) pAskHTML += `<div class="derived-item cockroach-pig-${pCockroachNext.winner.toLowerCase()}" title="Cockroach: ${pCockroachNext.winner === 'P' ? 'Pattern' : 'Choppy'}"></div>`;
     pAskContainer.innerHTML = pAskHTML + '</div>';
-
-    // Banker Probe
     const bProbeRoads = roadmapGenerator.generateDerivedRoads(bigRoad, 'B');
     const bBigEyeNext = bProbeRoads.bigEyeBoy.pop(); const bSmallNext = bProbeRoads.smallRoad.pop(); const bCockroachNext = bProbeRoads.cockroachPig.pop();
     let bAskHTML = '<div class="road-col !grid-auto-rows-[10px]">';
@@ -389,8 +416,7 @@ function addResult(winner) {
         state.predictions.push({ prediction: state.lastPrediction.prediction, actual: winner, outcome });
         state.lastPrediction = null;
         updateAnalysisUI('<p class="text-gray-400 text-center py-8">Sẵn sàng nhận đề xuất mới.</p>');
-        document.getElementById('analyzeBtn').disabled = false;
-        document.getElementById('analyzeBtn').classList.remove('opacity-50');
+        updateAnalyzeButtonState();
     }
     state.history.push({ winner, pPair, bPair });
     document.getElementById('totalGames').textContent = state.history.length;
@@ -398,6 +424,9 @@ function addResult(winner) {
     document.getElementById('bankerPair').checked = false;
     renderAllRoads();
     renderStatsAndChart();
+    if (state.isAutoSuggest && !state.isAnalyzing && !state.lastPrediction && state.history.length >= 5) {
+        setTimeout(triggerAIAnalysis, 100);
+    }
     saveState();
 }
 function undoLast() {
@@ -405,8 +434,7 @@ function undoLast() {
     if (state.lastPrediction) {
         state.lastPrediction = null;
         updateAnalysisUI('<p class="text-gray-400 text-center py-8">Đã hủy đề xuất. Sẵn sàng nhận đề xuất mới.</p>');
-        document.getElementById('analyzeBtn').disabled = false;
-        document.getElementById('analyzeBtn').classList.remove('opacity-50');
+        updateAnalyzeButtonState();
         saveState();
         return;
     }
@@ -428,8 +456,7 @@ function clearHistory() {
         renderStatsAndChart();
         saveState();
         updateAnalysisUI('<p class="text-gray-400 text-center py-8">Lịch sử đã được xóa.</p>');
-        document.getElementById('analyzeBtn').disabled = false;
-        document.getElementById('analyzeBtn').classList.remove('opacity-50');
+        updateAnalyzeButtonState();
     });
 }
 
@@ -450,13 +477,8 @@ function showConfirmation(title, message, onConfirm) {
     confirmModal.classList.remove('hidden');
     const okBtn = document.getElementById('confirmOkBtn');
     const cancelBtn = document.getElementById('confirmCancelBtn');
-
     const close = () => confirmModal.classList.add('hidden');
-    
-    okBtn.onclick = () => {
-        onConfirm();
-        close();
-    };
+    okBtn.onclick = () => { onConfirm(); close(); };
     cancelBtn.onclick = close;
 }
 
@@ -464,7 +486,14 @@ function showConfirmation(title, message, onConfirm) {
 function saveState() { localStorage.setItem('baccaratAI_state_v3', JSON.stringify(state)); }
 function loadState() {
     const savedState = localStorage.getItem('baccaratAI_state_v3');
-    if (savedState) { Object.assign(state, JSON.parse(savedState)); }
+    if (savedState) { 
+        const loaded = JSON.parse(savedState);
+        // Ensure new state properties exist
+        state = {
+            ...state,
+            ...loaded
+        };
+    }
 }
 
 // --- AI & ANALYSIS ---
@@ -472,8 +501,7 @@ async function triggerAIAnalysis() {
     if (!state.apiKey) { updateAnalysisUI(`<div class="text-center py-8"><p class="text-yellow-400 font-semibold">Vui lòng nhập Gemini API Key!</p><p class="text-gray-400 mt-2 text-sm">Click icon <i class="fas fa-cog"></i> để cài đặt.</p></div>`); return; }
     if (state.history.length < 5) { updateAnalysisUI(`<p class="text-gray-400 text-center py-8">Cần ít nhất 5 ván để phân tích...</p>`); return; }
     state.isAnalyzing = true;
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    analyzeBtn.disabled = true; analyzeBtn.classList.add('opacity-50');
+    updateAnalyzeButtonState();
     updateAnalysisUI(`<div class="flex flex-col items-center justify-center h-full py-8"><div class="w-8 h-8 border-4 border-t-blue-500 border-gray-600 rounded-full animate-spin"></div><p class="text-gray-400 mt-3 animate-pulse">Gemini đang phân tích...</p></div>`);
     try {
         const response = await fetch(`${GEMINI_API_URL}${state.apiKey}`, {
@@ -495,27 +523,23 @@ async function triggerAIAnalysis() {
     } catch (error) {
         console.error("AI Analysis Error:", error);
         updateAnalysisUI(`<div class="text-center py-8 text-red-400"><p class="font-semibold">Lỗi phân tích!</p><p class="text-sm mt-2">${error.message}.</p></div>`);
-        analyzeBtn.disabled = false; analyzeBtn.classList.remove('opacity-50');
+        state.lastPrediction = null; // Clear any failed prediction
     } finally {
-        state.isAnalyzing = false; saveState();
+        state.isAnalyzing = false;
+        updateAnalyzeButtonState();
+        saveState();
     }
 }
 
-// *** RE-ENHANCED PROMPT: Add derived roads back for deeper analysis ***
 function createPrompt() {
     const recentHistory = state.history.slice(-60);
     const historyString = recentHistory.map(h => h.winner).join('');
-    
     const bigRoad = roadmapGenerator.generateBigRoad(recentHistory);
     const bigRoadText = bigRoad.map(col => col.map(c => c.winner).join('')).join('|');
-
     const derivedRoads = roadmapGenerator.generateDerivedRoads(bigRoad);
-    // Use R for Red (Pattern) and B for Blue (Choppy) for derived roads
     const bigEyeBoyText = derivedRoads.bigEyeBoy.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
     const smallRoadText = derivedRoads.smallRoad.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
     const cockroachPigText = derivedRoads.cockroachPig.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
-
-    // A balanced prompt with full context
     return `Analyze Baccarat. Predict next (P or B). History: ${historyString}. BigRoad: ${bigRoadText}. BigEyeBoy(R=Pattern): ${bigEyeBoyText}. SmallRoad(R=Pattern): ${smallRoadText}. CockroachPig(R=Pattern): ${cockroachPigText}.`;
 }
 
@@ -529,20 +553,19 @@ function updateAnalysisUI(content) {
 // --- INITIALIZATION ---
 function initializeApp() {
     loadState();
+    document.getElementById('autoSuggestToggle').checked = state.isAutoSuggest || false;
     document.getElementById('totalGames').textContent = state.history.length;
     renderAllRoads();
     renderStatsAndChart();
-    const analyzeBtn = document.getElementById('analyzeBtn');
     if (state.lastPrediction) {
         const { prediction, reasoning } = state.lastPrediction;
         const glowClass = prediction === 'P' ? 'card-glow-p' : 'card-glow-b';
         document.getElementById('analysis-card').classList.add(glowClass);
         updateAnalysisUI(`<div class="bg-gray-700 p-4 rounded-lg"><h4 class="font-semibold text-gray-200 mb-2">Lý Do Đề Xuất:</h4><p class="text-gray-300 text-sm leading-relaxed">${reasoning}</p></div><div class="text-center bg-gray-900 py-4 rounded-lg border-2 ${glowClass.includes('p') ? 'border-blue-500' : 'border-red-500'}"><p class="text-lg text-gray-400">AI Đề xuất: <span class="text-2xl font-bold ${glowClass.includes('p') ? 'text-blue-400' : 'text-red-400'}">${prediction === 'P' ? 'CON' : 'CÁI'}</span></p><p class="text-xs text-yellow-400 mt-1 animate-pulse"> chờ kết quả ván tiếp theo... </p></div>`);
-        analyzeBtn.disabled = true;
-        analyzeBtn.classList.add('opacity-50');
     } else {
         updateAnalysisUI(state.history.length > 0 ? '<p class="text-gray-400 text-center py-8">Sẵn sàng nhận đề xuất từ AI.</p>' : '<p class="text-gray-400 text-center py-8">Chào mừng! Hãy nhập kết quả để bắt đầu.</p>');
     }
+    updateAnalyzeButtonState();
 }
 document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
