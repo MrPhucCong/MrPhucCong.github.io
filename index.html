@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Săn Cầu Gãy (2, 3)</title>
+    <title>Hệ Thống Phân Tích Cầu (3 Lớp Logic)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -11,8 +11,8 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #111827; /* Tailwind gray-900 */
-            color: #F9FAFB; /* Tailwind gray-50 */
+            background-color: #111827;
+            color: #F9FAFB;
         }
         .btn {
             transition: all 0.3s ease;
@@ -22,13 +22,8 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        .btn:active:not(:disabled) {
-            transform: translateY(1px);
-        }
-        .btn:disabled {
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
+        .btn:active:not(:disabled) { transform: translateY(1px); }
+        .btn:disabled { cursor: not-allowed; opacity: 0.6; }
         .card-glow-p { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
         .card-glow-b { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
         .card-glow-wait { box-shadow: 0 0 20px rgba(156, 163, 175, 0.4); }
@@ -36,94 +31,46 @@
         #bigRoadDisplay {
             display: grid;
             grid-auto-flow: column;
-            grid-auto-columns: 2.5rem; /* 40px */
+            grid-auto-columns: 2.5rem;
             gap: 2px;
             overflow-x: auto;
             padding: 8px;
             scrollbar-width: thin;
             scrollbar-color: #4b5563 #1f2937;
         }
-        .road-col {
-            display: grid;
-            grid-auto-rows: 2.5rem; /* 40px */
-            gap: 2px;
-        }
+        .road-col { display: grid; grid-auto-rows: 2.5rem; gap: 2px; }
         .road-item {
-            width: 2.5rem; /* 40px */
-            height: 2.5rem; /* 40px */
+            width: 2.5rem; height: 2.5rem;
             border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.125rem; /* 18px */
-            color: white;
-            animation: fadeIn 0.5s ease;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.125rem;
+            color: white; animation: fadeIn 0.5s ease;
         }
-        
         .highlight-target-col {
-            border: 3px solid #facc15; /* yellow-400 */
+            border: 3px solid #facc15;
             animation: pulse-yellow 1.5s infinite;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
         @keyframes pulse-yellow {
             0%, 100% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
             50% { box-shadow: 0 0 25px rgba(250, 204, 21, 0.9); }
         }
-
-        .session-item.active {
-            background-color: #3b82f6; /* blue-500 */
-            color: white;
-        }
-        .session-item.active .text-gray-400 {
-            color: #bfdbfe; /* blue-200 */
-        }
-        .session-item {
-            transition: background-color 0.2s ease-in-out;
-        }
-        
-        .bar-chart-container {
-            display: flex;
-            gap: 2px;
-            height: 40px;
-            align-items: flex-end;
-            background-color: rgba(0,0,0,0.2);
-            border-radius: 4px;
-            padding: 4px;
-            overflow-x: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #4b5563 #1f2937;
-        }
-        .bar-chart-container::-webkit-scrollbar { height: 4px; }
-        .bar-chart-container::-webkit-scrollbar-track { background: #1f2937; }
-        .bar-chart-container::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 2px; }
-        .bar {
-            width: 6px;
-            flex-shrink: 0;
-            border-radius: 2px;
-            transition: all 0.3s ease;
-        }
-        .bar.win { height: 100%; background-color: #3b82f6; }
-        .bar.loss { height: 40%; background-color: #ef4444; }
+        .session-item.active { background-color: #3b82f6; color: white; }
+        .session-item.active .text-gray-400 { color: #bfdbfe; }
+        .session-item { transition: background-color 0.2s ease-in-out; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
 <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- Left Column: Input & History -->
+    <!-- Left Column -->
     <div class="lg:col-span-2 space-y-6">
-        <!-- Header -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
-            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-red-400">Hệ Thống Săn Cầu Gãy</h1>
-            <p class="text-gray-400 mt-2">Tập trung vào tín hiệu bẻ cầu 2 & 3</p>
+            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-red-400">Hệ Thống Phân Tích Cầu (3 Lớp Logic)</h1>
+            <p class="text-gray-400 mt-2">Tự Học - Ghi Nhớ - Nhận Diện Cấu Trúc</p>
         </div>
 
-        <!-- Session Management -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <h2 class="text-xl font-semibold text-blue-300 mb-4">📁 Quản Lý Phiên</h2>
             <div id="sessionListContainer" class="space-y-1 bg-gray-900/50 p-2 rounded-lg max-h-48 overflow-y-auto mb-4 border border-gray-700"></div>
@@ -132,7 +79,6 @@
                 <button onclick="renameSession()" class="btn w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg">✏️ Đổi Tên</button>
                 <button onclick="deleteCurrentSession()" class="btn w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-lg">🗑️ Xóa Phiên</button>
             </div>
-             <!-- Import/Export -->
             <div class="flex flex-col sm:flex-row gap-4">
                 <button onclick="exportData()" class="btn w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg">📤 Xuất Dữ Liệu</button>
                 <button onclick="document.getElementById('fileInput').click()" class="btn w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg">📥 Nhập Dữ Liệu</button>
@@ -140,16 +86,11 @@
             </div>
         </div>
 
-        <!-- Input Section -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <h2 class="text-xl font-semibold mb-4 text-blue-300">🎲 Nhập Kết Quả Ván Hiện Tại</h2>
             <div class="grid grid-cols-2 gap-4 mb-4">
-                <button onclick="addResult('P')" class="btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 rounded-lg text-2xl">
-                    <span>👤</span> PLAYER
-                </button>
-                <button onclick="addResult('B')" class="btn bg-red-600 hover:bg-red-500 text-white font-bold py-6 rounded-lg text-2xl">
-                    <span>🏦</span> BANKER
-                </button>
+                <button onclick="addResult('P')" class="btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 rounded-lg text-2xl"><span>👤</span> PLAYER</button>
+                <button onclick="addResult('B')" class="btn bg-red-600 hover:bg-red-500 text-white font-bold py-6 rounded-lg text-2xl"><span>🏦</span> BANKER</button>
             </div>
             <div class="flex gap-4">
                 <button onclick="undoLast()" class="btn flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg">↩️ Hoàn Tác</button>
@@ -157,23 +98,19 @@
             </div>
         </div>
 
-        <!-- History Display -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-semibold text-blue-300">📜 Bảng Cầu Big Road</h2>
                 <span class="text-gray-400 font-medium">Tổng: <span id="totalGames">0</span> ván</span>
             </div>
             <div class="bg-gray-900 rounded-lg min-h-[280px] border border-gray-700">
-                <div id="bigRoadDisplay">
-                    <p class="text-gray-500 p-4">Chưa có kết quả...</p>
-                </div>
+                <div id="bigRoadDisplay"><p class="text-gray-500 p-4">Chưa có kết quả...</p></div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Analysis & Stats -->
+    <!-- Right Column -->
     <div class="space-y-6">
-        <!-- Accuracy Stats -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <h2 class="text-xl font-semibold mb-4 text-green-300">🎯 Thống Kê (Phiên Hiện Tại)</h2>
             <div class="space-y-4">
@@ -192,7 +129,6 @@
             </div>
         </div>
 
-        <!-- Global Accuracy Stats -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <h2 class="text-xl font-semibold mb-4 text-cyan-300">🌐 Thống Kê (Toàn Cục)</h2>
             <div class="space-y-4">
@@ -211,15 +147,11 @@
             </div>
         </div>
         
-        <!-- Method Stats -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <h2 class="text-xl font-semibold mb-4 text-purple-300">📊 Thống Kê Theo Phương Pháp</h2>
-            <div id="methodStatsContainer" class="space-y-4">
-                 <!-- Stats will be generated here by JS -->
-            </div>
+            <div id="methodStatsContainer" class="space-y-4"></div>
         </div>
         
-        <!-- Pattern Analysis -->
         <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500">
             <h2 class="text-xl font-semibold mb-4 text-yellow-300">🧠 Phân Tích & Đề Xuất</h2>
             <div id="analysisResult" class="space-y-4">
@@ -230,67 +162,239 @@
 </div>
 
 <script>
-// --- CORE LOGIC: BREAK HUNTER ANALYZER ---
-class BreakHunterAnalyzer {
-    
+// --- [!CORE LOGIC!] ---
+class MasterAnalyzer {
+    constructor() {
+        this.dynamicHunter = new DynamicBreakHunter();
+        this.patternMemory = new PatternMemoryAnalyzer();
+        this.structuralMemory = new StructuralPatternAnalyzer();
+    }
+
+    getPrediction(currentHistory, allSessions) {
+        const memoryPrediction = this.patternMemory.getPrediction(currentHistory, allSessions);
+        if (memoryPrediction.prediction && memoryPrediction.confidence === 1.0) {
+            return memoryPrediction;
+        }
+
+        const structuralPrediction = this.structuralMemory.getPrediction(currentHistory, allSessions);
+        if (structuralPrediction.prediction && structuralPrediction.confidence >= 0.8) {
+             return structuralPrediction;
+        }
+        
+        const dynamicPrediction = this.dynamicHunter.getPrediction(currentHistory);
+        if (dynamicPrediction.prediction) {
+            return dynamicPrediction;
+        }
+
+        // Fallback waiting messages
+        if (memoryPrediction.analysisText && memoryPrediction.analysisText.includes("Tìm thấy")) {
+             return memoryPrediction;
+        }
+        if (structuralPrediction.analysisText && structuralPrediction.analysisText.includes("Tìm thấy")) {
+             return structuralPrediction;
+        }
+        return dynamicPrediction;
+    }
+}
+
+class PatternMemoryAnalyzer {
+    historyToPatternString(history) {
+        if (!history || history.length < 2) return '';
+        const columns = new DynamicBreakHunter().historyToColumns(history);
+        return columns.map(col => `${col[0]}${col.length}`).join('-');
+    }
+
+    getPrediction(currentHistory, allSessions) {
+        const columns = new DynamicBreakHunter().historyToColumns(currentHistory);
+        if (columns.length < 2) {
+            return { prediction: null, analysisText: "Chờ tối thiểu 2 cầu để phân tích bộ nhớ..." };
+        }
+
+        const currentPatternSequence = columns.slice(-2).map(col => `${col[0]}${col.length}`).join('-');
+        const nextOutcomes = { 'P': 0, 'B': 0 };
+        let patternsFound = 0;
+
+        for (const sessionId in allSessions) {
+            const historicalPatternString = this.historyToPatternString(allSessions[sessionId].history);
+            let searchIndex = historicalPatternString.indexOf(currentPatternSequence);
+            while (searchIndex !== -1) {
+                patternsFound++;
+                const startIndexAfterMatch = searchIndex + currentPatternSequence.length + 1;
+                if (startIndexAfterMatch < historicalPatternString.length) {
+                    const nextResultChar = historicalPatternString[startIndexAfterMatch];
+                    if (nextOutcomes[nextResultChar] !== undefined) nextOutcomes[nextResultChar]++;
+                }
+                searchIndex = historicalPatternString.indexOf(currentPatternSequence, startIndexAfterMatch);
+            }
+        }
+        
+        const totalOutcomes = nextOutcomes.P + nextOutcomes.B;
+        if (totalOutcomes < 2) {
+             return { prediction: null, analysisText: patternsFound > 0 ? `Bộ nhớ: Tìm thấy ${patternsFound} quy luật "${currentPatternSequence}", chờ xác nhận...` : "Không tìm thấy quy luật trong bộ nhớ..." };
+        }
+        
+        const predictP = nextOutcomes.P > nextOutcomes.B;
+        const prediction = predictP ? 'P' : 'B';
+        const confidence = predictP ? nextOutcomes.P / totalOutcomes : nextOutcomes.B / totalOutcomes;
+
+        return {
+            prediction,
+            recommendation: `THEO BỘ NHỚ LỊCH SỬ`,
+            logicType: 'pattern_memory',
+            analysisText: `Lịch sử: Sau cầu "${currentPatternSequence}", kết quả là ${prediction} ${Math.round(confidence*100)}% (${predictP ? nextOutcomes.P : nextOutcomes.B}/${totalOutcomes}) lần.`,
+            confidence
+        };
+    }
+}
+
+class StructuralPatternAnalyzer {
+    columnsToStructuralPattern(columns) {
+        if (!columns || columns.length === 0) return { pattern: '', mapping: {} };
+        const aType = columns[0][0];
+        const bType = aType === 'P' ? 'B' : 'P';
+        const mapping = { A: aType, B: bType };
+        const pattern = columns.map(col => `${col[0] === aType ? 'A' : 'B'}${col.length}`).join('-');
+        return { pattern, mapping };
+    }
+
+    getPrediction(currentHistory, allSessions) {
+        const columns = new DynamicBreakHunter().historyToColumns(currentHistory);
+        if (columns.length < 2) {
+            return { prediction: null, analysisText: "Chờ tối thiểu 2 cầu để phân tích cấu trúc..." };
+        }
+        
+        const { pattern: currentStructuralSequence, mapping: currentMapping } = this.columnsToStructuralPattern(columns.slice(-2));
+        
+        const nextOutcomes = { 'A': 0, 'B': 0 };
+        let patternsFound = 0;
+
+        for (const sessionId in allSessions) {
+            const sessionCols = new DynamicBreakHunter().historyToColumns(allSessions[sessionId].history);
+            if (sessionCols.length < 3) continue;
+
+            for (let i = 0; i <= sessionCols.length - 3; i++) {
+                const historicalSlice = sessionCols.slice(i, i + 2);
+                const { pattern: historicalStructuralPattern, mapping: historicalMapping } = this.columnsToStructuralPattern(historicalSlice);
+                
+                if (historicalStructuralPattern === currentStructuralSequence) {
+                    patternsFound++;
+                    const nextCol = sessionCols[i + 2];
+                    const nextResultType = nextCol[0];
+                    if (nextResultType === historicalMapping.A) nextOutcomes.A++;
+                    else if (nextResultType === historicalMapping.B) nextOutcomes.B++;
+                }
+            }
+        }
+
+        const totalOutcomes = nextOutcomes.A + nextOutcomes.B;
+        if (totalOutcomes < 3) { // Need at least 3 historical examples for structural patterns
+            return { prediction: null, analysisText: patternsFound > 0 ? `Cấu trúc: Tìm thấy ${patternsFound} hình cầu "${currentStructuralSequence}", chờ xác nhận...` : "Không tìm thấy hình cầu trong bộ nhớ..." };
+        }
+
+        const predictA = nextOutcomes.A > nextOutcomes.B;
+        const predictionStruct = predictA ? 'A' : 'B';
+        const prediction = currentMapping[predictionStruct];
+        const confidence = predictA ? nextOutcomes.A / totalOutcomes : nextOutcomes.B / totalOutcomes;
+
+        return {
+            prediction,
+            recommendation: 'THEO CẤU TRÚC CẦU',
+            logicType: 'structural_memory',
+            analysisText: `Cấu trúc: Sau hình cầu "${currentStructuralSequence}", bên ${predictionStruct} (${prediction}) thắng ${Math.round(confidence * 100)}% (${predictA ? nextOutcomes.A : nextOutcomes.B}/${totalOutcomes}) lần.`,
+            confidence
+        };
+    }
+}
+
+class DynamicBreakHunter {
     historyToColumns(history) {
         if (!history || history.length === 0) return [];
         const columns = [];
-        let currentCol = [history[0]];
-        for (let i = 1; i < history.length; i++) {
-            if (history[i] === history[i-1]) {
-                currentCol.push(history[i]);
-            } else {
-                columns.push(currentCol);
-                currentCol = [history[i]];
+        if (history.length > 0) {
+            let currentCol = [history[0]];
+            for (let i = 1; i < history.length; i++) {
+                if (history[i] === history[i - 1]) {
+                    currentCol.push(history[i]);
+                } else {
+                    columns.push(currentCol);
+                    currentCol = [history[i]];
+                }
+            }
+            columns.push(currentCol);
+        }
+        return columns;
+    }
+
+    getBreakdownStats(columns) {
+        const stats = {};
+        const completedStreaks = columns.slice(0, -1);
+        completedStreaks.forEach(col => {
+            const len = col.length;
+            stats[len] = (stats[len] || 0) + 1;
+        });
+        let mostFrequentBreakLength = null;
+        let maxCount = 0;
+        for (const len in stats) {
+            if (stats[len] > maxCount) {
+                maxCount = stats[len];
+                mostFrequentBreakLength = parseInt(len);
             }
         }
-        columns.push(currentCol);
-        return columns;
+        if (completedStreaks.length < 5) {
+             return { stats, mostFrequentBreakLength: null, totalCompleted: completedStreaks.length };
+        }
+        return { stats, mostFrequentBreakLength, totalCompleted: completedStreaks.length };
     }
 
     getPrediction(history) {
         const columns = this.historyToColumns(history);
         const opposite = (val) => val === 'P' ? 'B' : 'P';
         
-        if (columns.length < 1) {
-            return { prediction: null, analysisText: "Nhập kết quả để bắt đầu.", highlightIndices: {} };
+        if (columns.length < 2) {
+            return { prediction: null, analysisText: "Nhập thêm dữ liệu để hệ thống học quy luật...", breakdown: {} };
         }
 
         const currentStreak = columns[columns.length - 1];
         const currentStreakLength = currentStreak.length;
         const currentStreakType = currentStreak[0];
-        
-        // --- PRIMARY LOGIC: Hunt for breaks at 2 and 3 ---
-        if (currentStreakLength === 2 || currentStreakLength === 3) {
+        const { stats, mostFrequentBreakLength, totalCompleted } = this.getBreakdownStats(columns);
+
+        if (mostFrequentBreakLength === null) {
             return {
-                prediction: opposite(currentStreakType),
-                recommendation: `ĐỀ XUẤT BẺ CẦU ${currentStreakLength}`,
-                logicType: 'break_hunter',
-                analysisText: `Phát hiện cầu ${currentStreakType} đang ở độ dài ${currentStreakLength}.\nĐây là tín hiệu mạnh để bẻ cầu.`,
-                highlightIndices: { target: columns.length - 1 }
+                prediction: null,
+                analysisText: `Đang học quy luật bàn... (${totalCompleted}/5 cầu đã hoàn thành)`,
+                breakdown: stats
             };
         }
 
-        // --- Fallback: Wait for a signal ---
+        if (currentStreakLength === mostFrequentBreakLength) {
+            return {
+                prediction: opposite(currentStreakType),
+                recommendation: `BẺ CẦU ${currentStreakLength} (Tín hiệu Vàng)`,
+                logicType: 'dynamic_break_hunter',
+                analysisText: `Phân tích phiên: Cầu gãy nhiều nhất ở độ dài ${mostFrequentBreakLength} (${stats[mostFrequentBreakLength]} lần).\nCầu ${currentStreakType} hiện tại đã đạt độ dài này.`,
+                highlightIndices: { target: columns.length - 1 },
+                breakdown: stats
+            };
+        }
+
         return {
             prediction: null,
-            analysisText: "Đang chờ tín hiệu bẻ cầu 2 hoặc 3...",
+            analysisText: `Đang chờ cầu chạm điểm gãy vàng (${mostFrequentBreakLength} tay)...`,
+            breakdown: stats,
             highlightIndices: {}
         };
     }
 }
 
-
 // --- GLOBAL STATE ---
 let state = {
     currentSessionId: null,
     sessions: {},
-    analyzer: new BreakHunterAnalyzer(),
+    analyzer: new MasterAnalyzer(),
 };
 
-
-// --- STATS CALCULATION ---
+// --- (The rest of the JS is mostly for UI and session management) ---
 function getPredictionStats(predictions) {
     const total = predictions.length;
     if (total === 0) return { rate: 0, correct: 0, total: 0 };
@@ -298,7 +402,6 @@ function getPredictionStats(predictions) {
     return { rate: (correct / total) * 100, correct, total };
 }
 
-// --- UI UPDATE FUNCTIONS ---
 function updateBigRoadUI() {
     const history = state.sessions[state.currentSessionId]?.history || [];
     const roadDiv = document.getElementById('bigRoadDisplay');
@@ -312,8 +415,8 @@ function updateBigRoadUI() {
     roadDiv.style.display = 'grid';
     roadDiv.innerHTML = '';
     
-    const analysisResult = state.analyzer.getPrediction(history);
-    const columns = state.analyzer.historyToColumns(history);
+    const analysisResult = state.analyzer.getPrediction(history, state.sessions);
+    const columns = new DynamicBreakHunter().historyToColumns(history);
 
     columns.forEach((colData, colIndex) => {
         const colDiv = document.createElement('div');
@@ -355,7 +458,7 @@ function updateGlobalAccuracyUI() {
 
 function updateAnalysisUI() {
     const history = state.sessions[state.currentSessionId]?.history || [];
-    const result = state.analyzer.getPrediction(history);
+    const result = state.analyzer.getPrediction(history, state.sessions);
     
     const analysisResultDiv = document.getElementById('analysisResult');
     const analysisCard = document.getElementById('analysis-card');
@@ -375,7 +478,7 @@ function updateAnalysisUI() {
     } else {
         analysisResultDiv.innerHTML = `
              <div class="text-center bg-gray-900/50 py-12 rounded-lg flex flex-col items-center justify-center">
-                <i class="fa-solid fa-hourglass-half text-4xl text-gray-500 animate-spin"></i>
+                <i class="fa-solid fa-brain text-4xl text-gray-500"></i>
                 <p class="text-gray-400 text-center mt-4 font-semibold whitespace-pre-wrap">${result.analysisText}</p>
              </div>
         `;
@@ -386,16 +489,19 @@ function updateAnalysisUI() {
 function updateMethodStatsUI() {
     const container = document.getElementById('methodStatsContainer');
     const session = state.sessions[state.currentSessionId];
-
-    if (!session || !session.predictions || session.predictions.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-center py-4">Chưa có đề xuất nào được ghi nhận.</p>';
+    
+    if (!session) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">Chưa có dữ liệu.</p>';
         return;
     }
-    
-    const predictions = session.predictions;
+
+    const { breakdown } = state.analyzer.dynamicHunter.getPrediction(session.history);
+    const predictions = session.predictions || [];
 
     const stats = {
-        break_hunter: { name: 'Bắt Cầu Gãy (2,3)', predictions: [] },
+        pattern_memory: { name: 'Bộ Nhớ Lịch Sử', predictions: [] },
+        structural_memory: { name: 'Phân Tích Cấu Trúc', predictions: [] },
+        dynamic_break_hunter: { name: 'Săn Cầu Gãy (Động)', predictions: [] }
     };
 
     predictions.forEach(p => {
@@ -408,18 +514,22 @@ function updateMethodStatsUI() {
     for (const key in stats) {
         const method = stats[key];
         const total = method.predictions.length;
-        if (total === 0) continue; // Skip methods with no predictions
-
         const wins = method.predictions.filter(p => p.predicted === p.actual).length;
-        const rate = (wins / total * 100);
-
-        let chartHtml = '<div class="bar-chart-container mt-2">';
-        method.predictions.forEach(p => {
-            const resultClass = p.predicted === p.actual ? 'win' : 'loss';
-            const title = `Dự đoán: ${p.predicted}, Thực tế: ${p.actual}`;
-            chartHtml += `<div class="bar ${resultClass}" title="${title}"></div>`;
-        });
-        chartHtml += '</div>';
+        const rate = total > 0 ? (wins / total * 100) : 0;
+        
+        let breakdownHtml = '';
+        if (key === 'dynamic_break_hunter') {
+            breakdownHtml = '<div class="space-y-1 mt-3 border-t border-gray-700 pt-3">';
+            const sortedBreakdown = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
+            if (sortedBreakdown.length > 0) {
+                sortedBreakdown.forEach(([len, count]) => {
+                    breakdownHtml += `<div class="flex justify-between items-center text-sm"><span class="text-gray-400">Số lần gãy tại cầu ${len}:</span><span class="font-bold text-white">${count} lần</span></div>`;
+                });
+            } else {
+                breakdownHtml += '<p class="text-xs text-center text-gray-500">Chưa có đủ dữ liệu điểm gãy.</p>';
+            }
+            breakdownHtml += '</div>';
+        }
 
         html += `
             <div class="bg-gray-700/50 p-3 rounded-lg">
@@ -434,13 +544,12 @@ function updateMethodStatsUI() {
                         <p class="font-semibold text-white">${wins} / ${total}</p>
                     </div>
                 </div>
-                ${chartHtml}
+                ${breakdownHtml}
             </div>
         `;
     }
-    container.innerHTML = html || '<p class="text-gray-500 text-center py-4">Chưa có đề xuất nào được ghi nhận.</p>';
+    container.innerHTML = html || '<p class="text-gray-500 text-center py-4">Chưa có đề xuất nào.</p>';
 }
-
 
 function updateAllUI() {
     updateSessionListUI();
@@ -451,12 +560,11 @@ function updateAllUI() {
     updateMethodStatsUI();
 }
 
-// --- EVENT HANDLERS & ACTIONS ---
 function addResult(result) {
     if (!state.currentSessionId) return;
     const session = state.sessions[state.currentSessionId];
     
-    const analysisResult = state.analyzer.getPrediction(session.history);
+    const analysisResult = state.analyzer.getPrediction(session.history, state.sessions);
 
     if (analysisResult.prediction) {
         session.predictions.push({
@@ -465,9 +573,7 @@ function addResult(result) {
             logicType: analysisResult.logicType
         });
     }
-
     session.history.push(result);
-
     saveState();
     updateAllUI();
 }
@@ -480,16 +586,13 @@ function undoLast() {
     const historyBeforeUndo = [...session.history];
     session.history.pop();
     
-    // Check if the state *before* the undo generated a prediction
-    const predictionForLastState = state.analyzer.getPrediction(historyBeforeUndo).prediction;
+    const predictionForLastState = state.analyzer.getPrediction(historyBeforeUndo, state.sessions).prediction;
     if (predictionForLastState && session.predictions.length > 0) {
        session.predictions.pop();
     }
-    
     saveState();
     updateAllUI();
 }
-
 
 function clearCurrentSessionHistory() {
     if (!state.currentSessionId) return;
@@ -502,24 +605,18 @@ function clearCurrentSessionHistory() {
     }
 }
 
-// --- SESSION MANAGEMENT ---
 function saveState() {
-    localStorage.setItem('baccaratBreakHunterSessions_v1', JSON.stringify(state.sessions));
-    localStorage.setItem('baccaratBreakHunterLastSession_v1', state.currentSessionId);
+    localStorage.setItem('baccaratMemoryHunter_v2', JSON.stringify(state.sessions));
+    localStorage.setItem('baccaratMemoryHunterLast_v2', state.currentSessionId);
 }
 
 function loadState() {
-    const sessions = localStorage.getItem('baccaratBreakHunterSessions_v1');
-    const lastSessionId = localStorage.getItem('baccaratBreakHunterLastSession_v1');
+    const sessions = localStorage.getItem('baccaratMemoryHunter_v2');
+    const lastSessionId = localStorage.getItem('baccaratMemoryHunterLast_v2');
     state.sessions = sessions ? JSON.parse(sessions) : {};
-    
-    // Data migration/ensure predictions array exists
     Object.values(state.sessions).forEach(session => {
-        if (!session.predictions) {
-            session.predictions = [];
-        }
+        if (!session.predictions) session.predictions = [];
     });
-
     return lastSessionId;
 }
 
@@ -579,11 +676,7 @@ function deleteCurrentSession() {
 
 function createNewSession() {
     const newId = `session-${Date.now()}`;
-    state.sessions[newId] = {
-        name: `Phiên ${new Date().toLocaleString('vi-VN')}`,
-        history: [],
-        predictions: []
-    };
+    state.sessions[newId] = { name: `Phiên ${new Date().toLocaleString('vi-VN')}`, history: [], predictions: [] };
     state.currentSessionId = newId;
     saveState();
     updateAllUI();
@@ -592,22 +685,18 @@ function createNewSession() {
 function loadSession(sessionId) {
     if (state.sessions[sessionId]) {
         state.currentSessionId = sessionId;
-        localStorage.setItem('baccaratBreakHunterLastSession_v1', state.currentSessionId);
+        localStorage.setItem('baccaratMemoryHunterLast_v2', state.currentSessionId);
         updateAllUI();
     }
 }
 
-// --- IMPORT / EXPORT ---
 function exportData() {
-    if (Object.keys(state.sessions).length === 0) {
-        alert("Không có dữ liệu để xuất.");
-        return;
-    }
+    if (Object.keys(state.sessions).length === 0) { alert("Không có dữ liệu để xuất."); return; }
     const dataStr = JSON.stringify(state.sessions, null, 2);
     const dataBlob = new Blob([dataStr], {type: "application/json"});
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
-    link.download = `baccarat_breakhunter_backup_v1_${new Date().toISOString().slice(0,10)}.json`;
+    link.download = `baccarat_memory_hunter_backup_v2_${new Date().toISOString().slice(0,10)}.json`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
@@ -621,26 +710,21 @@ function importData(event) {
         try {
             const importedSessions = JSON.parse(e.target.result);
             if (typeof importedSessions !== 'object' || importedSessions === null) throw new Error("Invalid format");
-            
             for(const key in importedSessions) {
                 const session = importedSessions[key];
-                if(!session.name || !Array.isArray(session.history)) {
-                    throw new Error("Invalid session data");
-                }
+                if(!session.name || !Array.isArray(session.history)) throw new Error("Invalid session data");
                 if (!session.predictions) session.predictions = [];
             }
-
             if (confirm('Dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc muốn tiếp tục?')) {
                 state.sessions = importedSessions;
                 state.currentSessionId = null;
-                localStorage.removeItem('baccaratBreakHunterLastSession_v1');
+                localStorage.removeItem('baccaratMemoryHunterLast_v2');
                 saveState();
                 initializeApp();
                 alert('Nhập dữ liệu thành công!');
             }
         } catch (error) {
-            alert('Lỗi: File dữ liệu không hợp lệ. Vui lòng kiểm tra lại file.');
-            console.error("Import error:", error);
+            alert('Lỗi: File dữ liệu không hợp lệ.');
         } finally {
             event.target.value = ''; 
         }
@@ -648,10 +732,8 @@ function importData(event) {
     reader.readAsText(file);
 }
 
-// --- INITIALIZATION ---
 function initializeApp() {
     const lastActiveId = loadState();
-
     if (Object.keys(state.sessions).length === 0) {
         createNewSession();
     } else {
@@ -665,3 +747,4 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
 </body>
 </html>
+
