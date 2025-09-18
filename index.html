@@ -238,7 +238,7 @@ let state = {
     isAnalyzing: false,
     lastPrediction: null, // { prediction: 'P', reasoning: '...' }
     predictions: [], // { prediction: 'P', actual: 'B', outcome: 'loss' }
-    isAutoSuggest: false, // New state for auto-suggestion feature
+    isAutoSuggest: false,
 };
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=';
 
@@ -297,7 +297,6 @@ function updateAnalyzeButtonState() {
     const analyzeBtn = document.getElementById('analyzeBtn');
     analyzeBtn.disabled = state.isAutoSuggest || state.isAnalyzing || !!state.lastPrediction;
 }
-
 function handleAutoSuggestToggle() {
     state.isAutoSuggest = document.getElementById('autoSuggestToggle').checked;
     saveState();
@@ -306,7 +305,6 @@ function handleAutoSuggestToggle() {
         triggerAIAnalysis();
     }
 }
-
 function renderAllRoads() {
     const bigRoad = roadmapGenerator.generateBigRoad(state.history);
     renderBeadPlateUI(state.history);
@@ -318,7 +316,6 @@ function renderAllRoads() {
     updatePredictionProbes(bigRoad);
     updateStatsUI(state.history);
 }
-
 function renderBeadPlateUI(data) {
     const container = document.getElementById('beadPlateDisplay'); container.innerHTML = '';
     const maxRows = 6; let currentCol = document.createElement('div'); currentCol.className = 'road-col';
@@ -352,7 +349,7 @@ function renderDerivedRoadUI(containerId, data, type) {
     columns.forEach(colData => {
         const colDiv = document.createElement('div'); colDiv.className = 'road-col !grid-auto-rows-[10px]';
         colData.forEach(item => {
-            const itemDiv = document.createElement('div'); const color = item.winner === 'P' ? 'p' : 'b'; // P=Pattern=Red, B=Choppy=Blue
+            const itemDiv = document.createElement('div'); const color = item.winner === 'P' ? 'p' : 'b';
             itemDiv.className = `derived-item ${type}-${color}`; colDiv.appendChild(itemDiv);
         });
         container.appendChild(colDiv);
@@ -460,7 +457,7 @@ function clearHistory() {
     });
 }
 
-// --- MODALS (Settings & Confirmation) ---
+// --- MODALS ---
 function openSettingsModal() {
     const modal = document.getElementById('settingsModal'); modal.classList.remove('hidden');
     modal.innerHTML = `<div class="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md"> <div class="flex justify-between items-center mb-6"> <h2 class="text-2xl font-bold text-blue-300">Cài Đặt</h2> <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-white text-3xl">&times;</button> </div> <div> <label for="apiKeyInput" class="block text-sm font-medium text-gray-300 mb-2">Gemini API Key</label> <input type="password" id="apiKeyInput" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${state.apiKey}"> <p class="text-xs text-gray-500 mt-2">API Key chỉ được lưu trên trình duyệt này. Không sử dụng trên máy tính công cộng. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">Lấy API Key</a>.</p> </div> <div class="mt-8 flex justify-end gap-4"> <button onclick="closeSettingsModal()" class="btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Hủy</button> <button onclick="saveSettings()" class="btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg">Lưu</button> </div> </div>`;
@@ -488,42 +485,115 @@ function loadState() {
     const savedState = localStorage.getItem('baccaratAI_state_v3');
     if (savedState) { 
         const loaded = JSON.parse(savedState);
-        // Ensure new state properties exist
-        state = {
-            ...state,
-            ...loaded
-        };
+        state = { ...state, ...loaded };
     }
 }
 
 // --- AI & ANALYSIS ---
+
+/**
+ * NEW: Analyzes a road (represented as columns) and returns streak statistics.
+ * @param {Array<Array<Object>>} road - The road data, e.g., from generateBigRoad.
+ * @returns {Object} An object containing streak statistics.
+ */
+function analyzeStreakLength(road) {
+    if (road.length <= 1) return { stats: {}, currentStreak: { length: 0 } };
+    
+    const stats = {}; // { "2": { "total": 5, "broken": 5 }, "3": { "total": 2, "broken": 1 } }
+    
+    // We analyze all columns except the last one to see how streaks ended.
+    for (let i = 0; i < road.length - 1; i++) {
+        const streakLength = road[i].length;
+        if (!stats[streakLength]) {
+            stats[streakLength] = { total: 0, broken: 0 };
+        }
+        stats[streakLength].total++;
+        stats[streakLength].broken++; // In this context, any ended streak is "broken".
+    }
+
+    // Now, handle the current, ongoing streak (the last column).
+    const currentStreakCol = road[road.length - 1];
+    const currentStreakLength = currentStreakCol.length;
+    const currentStreakType = currentStreakCol[0].winner;
+
+    if (!stats[currentStreakLength]) {
+        stats[currentStreakLength] = { total: 0, broken: 0 };
+    }
+    stats[currentStreakLength].total++; // This streak is happening now, so it adds to the total count for its length.
+    
+    return {
+        stats: stats,
+        currentStreak: {
+            type: currentStreakType,
+            length: currentStreakLength
+        }
+    };
+}
+
+/**
+ * NEW: Creates a formatted string from streak analysis results.
+ * @param {Object} analysis - The output from analyzeStreakLength.
+ * @param {string} roadName - The name of the road for labeling.
+ * @returns {string} A formatted string for the AI prompt.
+ */
+function formatStreakAnalysis(analysis, roadName) {
+    let result = `${roadName}:\n`;
+    if (Object.keys(analysis.stats).length === 0) {
+        return `${roadName}: Chưa có đủ dữ liệu.\n`;
+    }
+
+    for (const length in analysis.stats) {
+        const { total, broken } = analysis.stats[length];
+        const breakRate = total > 0 ? Math.round((broken / total) * 100) : 0;
+        if (total > 1) { // Only show stats for streaks that appeared more than once
+             result += `- Chuỗi dài ${length}: Xuất hiện ${total} lần, tỷ lệ gãy ${breakRate}%.\n`;
+        }
+    }
+    
+    if(analysis.currentStreak && analysis.currentStreak.length > 0) {
+        let typeName = '';
+        if (roadName.includes('Big Road')) {
+            typeName = analysis.currentStreak.type === 'P' ? 'Con' : 'Cái';
+        } else {
+            typeName = analysis.currentStreak.type === 'P' ? 'Pattern (Đỏ)' : 'Choppy (Xanh)';
+        }
+        result += `* Chuỗi hiện tại: ${typeName} dài ${analysis.currentStreak.length}.\n`;
+    }
+    return result;
+}
+
+
 async function triggerAIAnalysis() {
     if (!state.apiKey) { updateAnalysisUI(`<div class="text-center py-8"><p class="text-yellow-400 font-semibold">Vui lòng nhập Gemini API Key!</p><p class="text-gray-400 mt-2 text-sm">Click icon <i class="fas fa-cog"></i> để cài đặt.</p></div>`); return; }
     if (state.history.length < 5) { updateAnalysisUI(`<p class="text-gray-400 text-center py-8">Cần ít nhất 5 ván để phân tích...</p>`); return; }
     state.isAnalyzing = true;
     updateAnalyzeButtonState();
-    updateAnalysisUI(`<div class="flex flex-col items-center justify-center h-full py-8"><div class="w-8 h-8 border-4 border-t-blue-500 border-gray-600 rounded-full animate-spin"></div><p class="text-gray-400 mt-3 animate-pulse">Gemini đang phân tích...</p></div>`);
+    updateAnalysisUI(`<div class="flex flex-col items-center justify-center h-full py-8"><div class="w-8 h-8 border-4 border-t-blue-500 border-gray-600 rounded-full animate-spin"></div><p class="text-gray-400 mt-3 animate-pulse">Gemini đang phân tích quy luật cầu...</p></div>`);
+    
     try {
+        const prompt = createPrompt(); 
         const response = await fetch(`${GEMINI_API_URL}${state.apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: createPrompt() }] }],
-                systemInstruction: { parts: [{text: "You are a Baccarat analyst. Analyze the history and predict the next result. Response MUST be a single JSON object with two keys: 'prediction' ('P' or 'B') and 'reasoning' (a brief explanation in Vietnamese)."}] }
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{text: "You are a Baccarat analyst focused on streak length patterns. Analyze the provided streak statistics to predict the next result (P or B). Prioritize rules with high break rates, especially on the Big Road. Your response MUST be a single JSON object with 'prediction' and 'reasoning' keys. Reasoning must be in Vietnamese and explain which streak pattern led to the decision."}] }
             })
         });
         if (!response.ok) throw new Error(`API Error: ${response.statusText} (${response.status})`);
         const result = await response.json();
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("No content in API response. The API key might be invalid or quota exceeded.");
+        
         const { prediction, reasoning } = JSON.parse(text.replace(/```json|```/g, ''));
+        
         state.lastPrediction = { prediction, reasoning };
         const glowClass = prediction === 'P' ? 'card-glow-p' : 'card-glow-b';
         document.getElementById('analysis-card').classList.add(glowClass);
-        updateAnalysisUI(`<div class="bg-gray-700 p-4 rounded-lg"><h4 class="font-semibold text-gray-200 mb-2">Lý Do Đề Xuất:</h4><p class="text-gray-300 text-sm leading-relaxed">${reasoning}</p></div><div class="text-center bg-gray-900 py-4 rounded-lg border-2 ${glowClass.includes('p') ? 'border-blue-500' : 'border-red-500'}"><p class="text-lg text-gray-400">AI Đề xuất: <span class="text-2xl font-bold ${glowClass.includes('p') ? 'text-blue-400' : 'text-red-400'}">${prediction === 'P' ? 'CON' : 'CÁI'}</span></p><p class="text-xs text-yellow-400 mt-1 animate-pulse"> chờ kết quả ván tiếp theo... </p></div>`);
+        updateAnalysisUI(`<div class="bg-gray-700 p-4 rounded-lg"><h4 class="font-semibold text-gray-200 mb-2">Lý Do Đề Xuất (Dựa trên cầu):</h4><p class="text-gray-300 text-sm leading-relaxed">${reasoning}</p></div><div class="text-center bg-gray-900 py-4 rounded-lg border-2 ${glowClass.includes('p') ? 'border-blue-500' : 'border-red-500'}"><p class="text-lg text-gray-400">AI Đề xuất: <span class="text-2xl font-bold ${glowClass.includes('p') ? 'text-blue-400' : 'text-red-400'}">${prediction === 'P' ? 'CON' : 'CÁI'}</span></p><p class="text-xs text-yellow-400 mt-1 animate-pulse"> chờ kết quả ván tiếp theo... </p></div>`);
     } catch (error) {
         console.error("AI Analysis Error:", error);
         updateAnalysisUI(`<div class="text-center py-8 text-red-400"><p class="font-semibold">Lỗi phân tích!</p><p class="text-sm mt-2">${error.message}.</p></div>`);
-        state.lastPrediction = null; // Clear any failed prediction
+        state.lastPrediction = null;
     } finally {
         state.isAnalyzing = false;
         updateAnalyzeButtonState();
@@ -531,16 +601,38 @@ async function triggerAIAnalysis() {
     }
 }
 
+/**
+ * MODIFIED: Creates a new, structured prompt based on streak analysis.
+ */
 function createPrompt() {
-    const recentHistory = state.history.slice(-60);
+    const recentHistory = state.history.slice(-80); 
     const historyString = recentHistory.map(h => h.winner).join('');
+
+    // 1. Generate all roads
     const bigRoad = roadmapGenerator.generateBigRoad(recentHistory);
-    const bigRoadText = bigRoad.map(col => col.map(c => c.winner).join('')).join('|');
     const derivedRoads = roadmapGenerator.generateDerivedRoads(bigRoad);
-    const bigEyeBoyText = derivedRoads.bigEyeBoy.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
-    const smallRoadText = derivedRoads.smallRoad.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
-    const cockroachPigText = derivedRoads.cockroachPig.map(i => i.winner).join('').replace(/P/g, 'R').replace(/B/g, 'B');
-    return `Analyze Baccarat. Predict next (P or B). History: ${historyString}. BigRoad: ${bigRoadText}. BigEyeBoy(R=Pattern): ${bigEyeBoyText}. SmallRoad(R=Pattern): ${smallRoadText}. CockroachPig(R=Pattern): ${cockroachPigText}.`;
+    const bigEyeBoyRoad = roadmapGenerator.generateBigRoad(derivedRoads.bigEyeBoy);
+    const smallRoadRoad = roadmapGenerator.generateBigRoad(derivedRoads.smallRoad);
+    const cockroachPigRoad = roadmapGenerator.generateBigRoad(derivedRoads.cockroachPig);
+
+    // 2. Analyze streaks for each road
+    const bigRoadAnalysis = analyzeStreakLength(bigRoad);
+    const bigEyeBoyAnalysis = analyzeStreakLength(bigEyeBoyRoad);
+    const smallRoadAnalysis = analyzeStreakLength(smallRoadRoad);
+    const cockroachPigAnalysis = analyzeStreakLength(cockroachPigRoad);
+
+    // 3. Format the analysis into a text prompt
+    let prompt = "Phân tích thống kê chiều dài cầu Baccarat để dự đoán kết quả tiếp theo (P hoặc B).\n\n";
+    prompt += "Bối cảnh: Chuỗi kết quả gần nhất là: " + historyString.slice(-20) + "\n\n";
+    prompt += "--- THỐNG KÊ CHIỀU DÀI CẦU ---\n";
+    prompt += formatStreakAnalysis(bigRoadAnalysis, "Big Road (Cầu Chính)");
+    prompt += formatStreakAnalysis(bigEyeBoyAnalysis, "Big Eye Boy");
+    prompt += formatStreakAnalysis(smallRoadAnalysis, "Small Road");
+    prompt += formatStreakAnalysis(cockroachPigAnalysis, "Cockroach Pig");
+    prompt += "\n--- YÊU CẦU ---\n";
+    prompt += "Dựa vào các quy luật trên, đặc biệt là các chuỗi có tỷ lệ gãy cao (trên 80%), hãy dự đoán kết quả tiếp theo là Player (P) hay Banker (B). Ưu tiên tín hiệu từ Big Road. Nếu chuỗi hiện tại đang ở độ dài có tỷ lệ gãy 100%, hãy dự đoán nó sẽ gãy.";
+    
+    return prompt;
 }
 
 function updateAnalysisUI(content) {
@@ -571,4 +663,3 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
 </body>
 </html>
-
