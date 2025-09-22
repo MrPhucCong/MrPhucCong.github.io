@@ -130,25 +130,11 @@
             </div>
         </div>
 
-        <!-- Analysis Settings -->
+        <!-- Confidence Stats Table -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-            <h2 class="text-xl font-semibold mb-4 text-purple-300">⚙️ Cài Đặt Phân Tích (Thủ công)</h2>
-            <p class="text-sm text-gray-400 mb-4">Cài đặt này chỉ được sử dụng khi hệ thống chưa tìm thấy chiều dài cầu tối ưu.</p>
-            <div class="space-y-4">
-                <div>
-                    <label for="minPatternLength" class="block text-sm font-medium text-gray-300 mb-1">Độ dài cầu tối thiểu</label>
-                    <input type="number" id="minPatternLength" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
-                </div>
-                <div>
-                    <label for="maxPatternLength" class="block text-sm font-medium text-gray-300 mb-1">Độ dài cầu tối đa</label>
-                    <input type="number" id="maxPatternLength" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
-                </div>
-                <div>
-                    <label for="minCertainOccurrences" class="block text-sm font-medium text-gray-300 mb-1">Số lần lặp tối thiểu cho "Tay Chắc Chắn"</label>
-                    <input type="number" id="minCertainOccurrences" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
-                </div>
-            </div>
-            <button onclick="saveSettings()" class="btn w-full mt-6 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg">Lưu Cài Đặt</button>
+            <h2 class="text-xl font-semibold mb-2 text-green-300">📊 Thống Kê Độ Tin Cậy (Phiên)</h2>
+            <div id="confidenceRecommendation" class="my-4 p-3 bg-gray-900 rounded-lg text-center"></div>
+            <div class="space-y-2" id="confidenceStatsTable"></div>
         </div>
 
         <!-- History Display -->
@@ -196,6 +182,27 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Gemini AI Analysis -->
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-300 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+                <span class="ml-2">Trợ lý AI Gemini</span>
+            </h2>
+            <div class="flex items-center gap-2 mb-4">
+                <div class="relative w-full">
+                    <input type="password" id="geminiApiKey" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none pr-10" placeholder="Nhập API Key của Gemini...">
+                    <button id="toggleApiKey" type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-white">
+                        <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <svg id="eye-off-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line></svg>
+                    </button>
+                </div>
+                <button onclick="saveApiKey()" class="btn bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0">Lưu</button>
+            </div>
+            <div id="geminiAnalysisResult" class="text-gray-300 bg-gray-900 p-4 rounded-lg min-h-[120px] transition-all duration-300">
+                <p class="text-gray-500">AI sẽ đưa ra nhận định sau khi có đủ dữ liệu...</p>
+            </div>
+        </div>
 
         <!-- Pattern Analysis -->
         <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500">
@@ -205,11 +212,25 @@
             </div>
         </div>
 
-        <!-- Confidence Stats Table -->
+        <!-- Analysis Settings -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-            <h2 class="text-xl font-semibold mb-2 text-green-300">📊 Thống Kê Độ Tin Cậy (Phiên)</h2>
-            <div id="confidenceRecommendation" class="my-4 p-3 bg-gray-900 rounded-lg text-center"></div>
-            <div class="space-y-2" id="confidenceStatsTable"></div>
+            <h2 class="text-xl font-semibold mb-4 text-purple-300">⚙️ Cài Đặt Phân Tích (Thủ công)</h2>
+            <p class="text-sm text-gray-400 mb-4">Cài đặt này chỉ được sử dụng khi hệ thống chưa tìm thấy chiều dài cầu tối ưu.</p>
+            <div class="space-y-4">
+                <div>
+                    <label for="minPatternLength" class="block text-sm font-medium text-gray-300 mb-1">Độ dài cầu tối thiểu</label>
+                    <input type="number" id="minPatternLength" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                </div>
+                <div>
+                    <label for="maxPatternLength" class="block text-sm font-medium text-gray-300 mb-1">Độ dài cầu tối đa</label>
+                    <input type="number" id="maxPatternLength" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                </div>
+                <div>
+                    <label for="minCertainOccurrences" class="block text-sm font-medium text-gray-300 mb-1">Số lần lặp tối thiểu cho "Tay Chắc Chắn"</label>
+                    <input type="number" id="minCertainOccurrences" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                </div>
+            </div>
+            <button onclick="saveSettings()" class="btn w-full mt-6 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg">Lưu Cài Đặt</button>
         </div>
     </div>
 </div>
@@ -417,7 +438,6 @@ function updateAnalysisUI() {
     });
     state.currentPrediction = { prediction, confidence };
 
-    // REQUIREMENT 1: Add confidence range string
     let confidenceRangeString = '';
     if (confidence) {
         const ranges = [{min:50,max:60},{min:60,max:70},{min:70,max:80},{min:80,max:90},{min:90,max:100}];
@@ -431,9 +451,11 @@ function updateAnalysisUI() {
     if (finalRecommendation === 'THEO CHIỀU DÀI TỐI ƯU') {
         finalRecommendation += confidenceRangeString;
     }
-
+    
+    let isInGoldenRange = false;
     if (prediction && !isCertain && state.goldenRange) {
         if (confidence >= state.goldenRange.min && confidence <= state.goldenRange.max) {
+            isInGoldenRange = true;
             if (state.goldenRange.rate < 30) {
                 finalPrediction = prediction === 'P' ? 'B' : 'P';
                 finalRecommendation = `ĐỀ XUẤT NGƯỢC (Tỷ lệ thấp)`;
@@ -458,14 +480,33 @@ function updateAnalysisUI() {
             analysisCard.classList.add(finalPrediction === 'P' ? 'card-glow-p' : 'card-glow-b');
         }
         analysisResultDiv.innerHTML = `${optimalLengthDisplay}<div class="bg-gray-700 p-4 rounded-lg"><p class="text-gray-300 whitespace-pre-wrap">${analysisText}</p></div>${predictionBlockHTML}`;
+        
+        // --- GEMINI API CALL (with Global Stats) ---
+        const sessionPredictions = state.sessions[state.currentSessionId]?.predictions || [];
+        const sessionStats = getPredictionStats(sessionPredictions);
+        const allPredictions = Object.values(state.sessions).flatMap(s => s.predictions || []);
+        const globalStats = getPredictionStats(allPredictions);
+
+        const context = {
+            prediction: prediction,
+            recommendation: recommendation,
+            confidence: confidence,
+            history: session.history,
+            sessionStats: sessionStats,
+            globalStats: globalStats,
+            goldenRange: state.goldenRange,
+            isInGoldenRange: isInGoldenRange
+        };
+        getGeminiAnalysis(context);
+
     } else {
         analysisResultDiv.innerHTML = `${optimalLengthDisplay}<p class="text-gray-400 text-center py-8 whitespace-pre-wrap">${analysisText}</p>`;
+        document.getElementById('geminiAnalysisResult').innerHTML = '<p class="text-gray-500">AI sẽ đưa ra nhận định sau khi có đủ dữ liệu...</p>';
     }
 }
 function updateConfidenceStatsUI() {
     if (!state.currentSessionId || !state.sessions[state.currentSessionId]) return;
     
-    // REQUIREMENT 2: Get current and previous prediction confidences
     const currentConfidence = state.currentPrediction?.confidence;
     const sessionPredictions = state.sessions[state.currentSessionId].predictions || [];
     const previousConfidence = sessionPredictions.length > 0 ? sessionPredictions[sessionPredictions.length - 1].confidence : null;
@@ -493,25 +534,42 @@ function updateConfidenceStatsUI() {
     if (bestRange) recommendationDiv.innerHTML = `<p class="text-sm text-yellow-300"><span class="font-bold">✨ Khoảng Vàng:</span> Tỷ lệ thắng cao nhất là <b class="text-green-400">${maxRate.toFixed(1)}%</b> trong khoảng <b class="text-white">${bestRange.min}%-${bestRange.max}%</b>.</p>`;
     else recommendationDiv.innerHTML = `<p class="text-sm text-gray-400">Chưa đủ dữ liệu để tìm khoảng vàng (cần tối thiểu 3 phán đoán trong 1 khoảng).</p>`;
     const tableDiv = document.getElementById('confidenceStatsTable');
-    let html = `<div class="grid gap-x-2 text-xs font-semibold text-gray-400 px-3" style="grid-template-columns: 3fr 2fr 2fr 5fr;"><span>Khoảng</span><span class="text-center">Tổng</span><span class="text-center">Thắng</span><span class="text-right">Tỷ Lệ & Trạng thái</span></div>`;
+    let html = `<div class="grid gap-x-2 text-xs font-semibold text-gray-400 px-3" style="grid-template-columns: 2fr 4fr 2fr 2fr 3fr;"><span>Khoảng</span><span class="text-center">Diễn Biến Gần Đây</span><span class="text-center">Tổng</span><span class="text-center">Thắng</span><span class="text-right">Tỷ Lệ</span></div>`;
     if (sessionPredictions.length === 0 && !currentConfidence) {
         tableDiv.innerHTML = '<p class="text-gray-500 text-center py-4">Chưa có dữ liệu thống kê.</p>';
     } else {
         ranges.forEach(range => {
             const highlightClass = range === bestRange ? 'bg-green-800 bg-opacity-40 border border-green-500' : 'bg-gray-700 bg-opacity-50';
             
-            // REQUIREMENT 2: Build indicator HTML
             let indicatorsHTML = '';
             if (currentConfidence && currentConfidence >= range.min && (currentConfidence < range.max || (range.max === 100 && currentConfidence >= 100))) {
                  indicatorsHTML += `<span class="ml-2 px-1.5 py-0.5 text-xs rounded font-semibold bg-blue-600 text-white" title="Phán đoán hiện tại">Hiện tại</span>`;
             }
-            if (previousConfidence && previousConfidence >= range.min && (previousConfidence < range.max || (range.max === 100 && previousConfidence >= 100))) {
+            if (previousConfidence && previousConfidence >= range.min && (previousConfidence < range.max || (previousConfidence >= 100 && range.max === 100))) {
                 const marginLeft = indicatorsHTML ? 'ml-1' : 'ml-2';
                 indicatorsHTML += `<span class="${marginLeft} px-1.5 py-0.5 text-xs rounded font-semibold bg-gray-500 text-white" title="Phán đoán ván trước">Trước</span>`;
             }
 
-            html += `<div class="grid gap-x-2 items-center ${highlightClass} p-3 rounded-lg mt-2 text-sm" style="grid-template-columns: 3fr 2fr 2fr 5fr;">
+            // Individual Bar Chart Logic
+            const predictionsForRange = sessionPredictions.filter(p => p.confidence >= range.min && (p.confidence < range.max || (p.confidence >= 100 && range.max === 100)));
+            const displayedPredictions = predictionsForRange.slice(-30); // Show last 30
+            let individualBarsHTML = `<div class="flex items-end justify-center gap-px h-5 my-auto overflow-hidden" title="Hiển thị tối đa 30 ván gần nhất">`;
+            if (displayedPredictions.length > 0) {
+                for (const p of displayedPredictions) {
+                    const isWin = p.predicted === p.actual;
+                    const barClass = isWin ? 'bg-blue-500 h-5' : 'bg-red-500 h-2';
+                    const title = `Đề xuất: ${p.predicted}, Ra: ${p.actual} -> ${isWin ? 'THẮNG' : 'THUA'}\nĐộ tin cậy: ${p.confidence.toFixed(1)}%`;
+                    individualBarsHTML += `<div class="flex-shrink-0 w-1 ${barClass} rounded-t-sm" title="${title}"></div>`;
+                }
+            } else {
+                individualBarsHTML += `<div class="w-full text-center"><span class="text-gray-600 text-xs">Chưa có</span></div>`;
+            }
+            individualBarsHTML += '</div>';
+
+
+            html += `<div class="grid gap-x-2 items-center ${highlightClass} p-3 rounded-lg mt-2 text-sm" style="grid-template-columns: 2fr 4fr 2fr 2fr 3fr;">
                 <span class="font-medium text-gray-300">${range.min}%-${range.max}%</span>
+                ${individualBarsHTML}
                 <span class="text-white font-semibold text-center">${range.total}</span>
                 <span class="text-green-400 font-semibold text-center">${range.wins}</span>
                 <span class="font-bold flex items-center justify-end ${range.rate >= 70 ? 'text-green-400' : (range.rate >= 50 ? 'text-yellow-400' : 'text-red-400')}">
@@ -525,21 +583,113 @@ function updateAllUI() {
     updateBigRoadUI();
     updateAccuracyUI();
     updateGlobalAccuracyUI();
-    updateConfidenceStatsUI();
     updateAnalysisUI();
+    updateConfidenceStatsUI();
 }
+
+// --- GEMINI API INTEGRATION ---
+function constructGeminiPrompt(context) {
+    const systemPrompt = `You are an expert Baccarat analyst AI assistant named Gemini.
+Your task is to analyze the provided game data (including current session and global stats) and give a concise, insightful commentary IN VIETNAMESE.
+Your goal is to explain the current situation and the system's prediction, NOT to give a new, conflicting prediction.
+Be brief (2-4 sentences max), friendly, and act as a helpful advisor. Use Markdown for bolding key terms like **Player**, **Banker**, **cầu bệt**, **cầu 1-1**, etc. NEVER use headers or lists.`;
+
+    let analysisDetails = `
+- System's Prediction: ${context.prediction === 'P' ? 'PLAYER' : 'BANKER'}
+- Reason: ${context.recommendation}
+- Confidence: ${context.confidence.toFixed(1)}%
+- Current Session Win Rate: ${context.sessionStats.rate.toFixed(1)}%
+- Global System Win Rate (all sessions): ${context.globalStats.rate.toFixed(1)}% (${context.globalStats.correct}/${context.globalStats.total})
+- Game History (last 20 hands): ${context.history.slice(-20).join(', ')}
+`;
+
+    if (context.goldenRange) {
+        analysisDetails += `- Golden Range: The ${context.goldenRange.min}%-${context.goldenRange.max}% confidence range currently has a **${context.goldenRange.rate.toFixed(1)}%** win rate.`;
+        if (context.isInGoldenRange) {
+            analysisDetails += ` (The current prediction IS in this effective range).`;
+        } else {
+            analysisDetails += ` (The current prediction IS NOT in this effective range).`;
+        }
+    } else {
+        analysisDetails += `- Golden Range: Not yet determined for this session.`;
+    }
+
+    const userQuery = `Here is the current Baccarat game state. Please provide your brief, friendly analysis in Vietnamese based on this data.\n\n${analysisDetails}`;
+    
+    return { systemPrompt, userQuery };
+}
+
+async function getGeminiAnalysis(context) {
+    const geminiResultDiv = document.getElementById('geminiAnalysisResult');
+    const apiKey = localStorage.getItem('geminiApiKey_v1');
+
+    if (!apiKey) {
+        geminiResultDiv.innerHTML = '<p class="text-yellow-400">Vui lòng nhập API Key của Gemini để sử dụng tính năng này.</p>';
+        return;
+    }
+
+    // Do not call API if context is empty (e.g., on initial load)
+    if (!context || !context.prediction) {
+        geminiResultDiv.innerHTML = '<p class="text-gray-500">AI sẽ đưa ra nhận định sau khi có đủ dữ liệu...</p>';
+        return;
+    }
+
+    geminiResultDiv.innerHTML = '<p class="text-gray-500 animate-pulse">AI đang phân tích...</p>';
+
+    const { systemPrompt, userQuery } = constructGeminiPrompt(context);
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+    try {
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: {
+                parts: [{ text: systemPrompt }]
+            },
+        };
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API call failed with status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (text) {
+            const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            geminiResultDiv.innerHTML = `<p>${formattedText}</p>`;
+        } else {
+            geminiResultDiv.innerHTML = '<p class="text-yellow-400">AI không có nhận định cho ván này.</p>';
+        }
+
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        geminiResultDiv.innerHTML = '<p class="text-red-400">Lỗi: API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại.</p>';
+    }
+}
+
 
 // --- EVENT HANDLERS & ACTIONS ---
 function addResult(result) {
     if (!state.currentSessionId) return;
     const session = state.sessions[state.currentSessionId];
-    const newOptimalLength = updateLengthPerformanceAndFindOptimal([...session.history], Object.values(state.sessions), result);
-    session.optimalLength = newOptimalLength;
+    const historyBeforeAdd = [...session.history];
+
     if (state.currentPrediction && state.currentPrediction.prediction) {
         session.predictions.push({ predicted: state.currentPrediction.prediction, actual: result, confidence: state.currentPrediction.confidence });
     }
-    state.currentPrediction = null;
+    
     session.history.push(result);
+    
+    const newOptimalLength = updateLengthPerformanceAndFindOptimal(historyBeforeAdd, Object.values(state.sessions), result);
+    session.optimalLength = newOptimalLength;
+
+    state.currentPrediction = null; 
     saveSessions();
     updateAllUI();
 }
@@ -639,7 +789,7 @@ function loadSession(sessionId) {
     }
 }
 
-// --- SETTINGS ---
+// --- SETTINGS & API KEY ---
 function saveSettings() {
     const settings = {
         minPatternLength: document.getElementById('minPatternLength').value,
@@ -662,6 +812,46 @@ function loadSettings() {
     document.getElementById('minPatternLength').value = state.matcher.MIN_PATTERN_LENGTH;
     document.getElementById('maxPatternLength').value = state.matcher.MAX_PATTERN_LENGTH;
     document.getElementById('minCertainOccurrences').value = state.matcher.MIN_CERTAIN_OCCURRENCES;
+}
+function saveApiKey() {
+    const apiKeyInput = document.getElementById('geminiApiKey');
+    const apiKey = apiKeyInput.value.trim();
+    if (apiKey) {
+        localStorage.setItem('geminiApiKey_v1', apiKey);
+        showToast('API Key đã được lưu thành công!', 'success');
+    } else {
+        localStorage.removeItem('geminiApiKey_v1');
+        showToast('API Key đã được xóa.', 'info');
+    }
+    // Re-check Gemini status without a full prediction context
+    const geminiResultDiv = document.getElementById('geminiAnalysisResult');
+    if (!apiKey) {
+         geminiResultDiv.innerHTML = '<p class="text-yellow-400">Vui lòng nhập API Key của Gemini để sử dụng tính năng này.</p>';
+    } else {
+        geminiResultDiv.innerHTML = '<p class="text-gray-500">API Key đã lưu. AI sẽ phân tích ở ván tiếp theo.</p>';
+    }
+}
+function loadApiKey() {
+    const apiKey = localStorage.getItem('geminiApiKey_v1') || '';
+    document.getElementById('geminiApiKey').value = apiKey;
+}
+function setupApiKeyToggle() {
+    const toggleButton = document.getElementById('toggleApiKey');
+    const apiKeyInput = document.getElementById('geminiApiKey');
+    const eyeIcon = document.getElementById('eye-icon');
+    const eyeOffIcon = document.getElementById('eye-off-icon');
+
+    toggleButton.addEventListener('click', () => {
+        if (apiKeyInput.type === 'password') {
+            apiKeyInput.type = 'text';
+            eyeIcon.classList.add('hidden');
+            eyeOffIcon.classList.remove('hidden');
+        } else {
+            apiKeyInput.type = 'password';
+            eyeIcon.classList.remove('hidden');
+            eyeOffIcon.classList.add('hidden');
+        }
+    });
 }
 
 // --- IMPORT / EXPORT ---
@@ -761,6 +951,8 @@ function showCustomPrompt(message, defaultValue, onConfirm) {
 
 function initializeApp() {
     loadSettings();
+    loadApiKey();
+    setupApiKeyToggle();
     state.sessions = getSessions();
     Object.values(state.sessions).forEach(s => {
         if (!s.lengthPerformance) s.lengthPerformance = {};
