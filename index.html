@@ -373,7 +373,7 @@ let state = {
     currentPrediction: null,
     goldenRange: null,
     sessionConfidenceRanges: [],
-    globalConfidenceRanges: []
+    confidenceSequenceData: {}
 };
 
 // --- STATS CALCULATION ---
@@ -394,6 +394,44 @@ function calculateConfidenceRangeStats(predictions) {
         range.rate = range.total > 0 ? ((range.wins / range.total) * 100) : -1;
     });
     return ranges;
+}
+
+// NEW: Function to get win/loss sequence data for the AI
+function getConfidenceSequenceData() {
+    const sequenceData = {};
+    const rangeDefs = [{min:50,max:60},{min:60,max:70},{min:70,max:80},{min:80,max:90},{min:90,max:100}];
+
+    rangeDefs.forEach(r => {
+        const key = `${r.min}-${r.max}`;
+        sequenceData[key] = {};
+    });
+
+    for (const sessionId in state.sessions) {
+        const session = state.sessions[sessionId];
+        if (!session.predictions || session.predictions.length === 0) continue;
+
+        const sessionSequences = {};
+        rangeDefs.forEach(r => {
+            const key = `${r.min}-${r.max}`;
+            sessionSequences[key] = [];
+        });
+
+        session.predictions.forEach(p => {
+            const result = (p.predicted === p.actual) ? 'W' : 'L';
+            const foundRange = rangeDefs.find(r => p.confidence >= r.min && (p.confidence < r.max || (r.max === 100 && p.confidence >= 100)));
+            if (foundRange) {
+                const key = `${foundRange.min}-${foundRange.max}`;
+                sessionSequences[key].push(result);
+            }
+        });
+
+        for (const key in sessionSequences) {
+            if (sessionSequences[key].length > 0) {
+                 sequenceData[key][sessionId] = sessionSequences[key].join('');
+            }
+        }
+    }
+    return sequenceData;
 }
 
 
@@ -498,8 +536,8 @@ function updateAnalysisUI() {
         const context = {
             prediction: prediction,
             confidence: confidence,
-            sessionConfidenceStats: state.sessionConfidenceRanges,
-            globalConfidenceStats: state.globalConfidenceRanges,
+            sequenceData: state.confidenceSequenceData,
+            currentSessionId: state.currentSessionId
         };
         getGeminiAnalysis(context);
 
@@ -514,10 +552,9 @@ function updateConfidenceStatsUI() {
     // Calculate for current session
     const sessionPredictions = state.sessions[state.currentSessionId].predictions || [];
     state.sessionConfidenceRanges = calculateConfidenceRangeStats(sessionPredictions);
-
-    // Calculate globally
-    const allPredictions = Object.values(state.sessions).flatMap(s => s.predictions || []);
-    state.globalConfidenceRanges = calculateConfidenceRangeStats(allPredictions);
+    
+    // NEW: Calculate sequence data for all sessions
+    state.confidenceSequenceData = getConfidenceSequenceData();
 
     // Continue with UI update for the session table
     const currentConfidence = state.currentPrediction?.confidence;
@@ -593,36 +630,40 @@ function updateAllUI() {
 
 // --- GEMINI API INTEGRATION ---
 function constructGeminiPrompt(context) {
-    const systemPrompt = `You are a master strategist AI for a Baccarat analysis tool. Your primary role is to provide a final, decisive recommendation: **"Nên theo hệ thống"** or **"Nên đi ngược lại hệ thống"**.
+    const systemPrompt = `You are a Baccarat sequence analyst AI. Your goal is to detect recurring patterns in the win/loss history (the "charts") of a prediction system to issue a final verdict: **"Nên theo hệ thống"** or **"Nên đi ngược lại hệ thống"**.
 
-You will be given two sets of performance data for the system's prediction confidence brackets:
-1.  **Global Performance (Toàn Cục):** Based on all historical data. This is the most reliable long-term indicator.
-2.  **Session Performance (Phiên):** Based only on the current game session. This shows the short-term trend.
-
-**Your decision-making process:**
-1.  Identify the confidence bracket for the system's current prediction.
-2.  **Prioritize the Global Performance.** If the global win rate for that bracket is strong (>= 55%), your default recommendation is "Nên theo". If it's weak (< 55%), your default is "Nên đi ngược lại".
-3.  Use the Session Performance as a secondary factor. If the session trend confirms the global trend, state it. If it contradicts, advise caution but still lean on the global data.
-
-Your response must be IN VIETNAMESE, start with the final recommendation, and then provide a 1-2 sentence explanation. Be decisive.`;
-
-    let analysisDetails = `\n- System's Current Prediction: ${context.prediction === 'P' ? 'PLAYER' : 'BANKER'}\n- Confidence: ${context.confidence.toFixed(1)}%\n\n--- Performance Data ---\n`;
+**Your Logic:**
+1.  Identify the confidence bracket for the current prediction (e.g., 70-80%).
+2.  Identify the recent win/loss sequence for this bracket in the *current session*. Look at the last 2-3 results (e.g., "L-W", which means Loss then Win).
+3.  Scan all **historical data from previous sessions** for this *same confidence bracket*. Find every instance of the exact same recent sequence (e.g., every time "L-W" occurred).
+4.  Analyze what happened **immediately after** that sequence in the past.
+5.  **Base your verdict on this historical pattern:**
+    - If the outcome after the sequence was most often a **Win**, your verdict is **"Nên theo hệ thống"**.
+    - If the outcome was most often a **Loss**, your verdict is **"Nên đi ngược lại hệ thống"**.
+6.  Your explanation must be brief, in VIETNAMESE, and state the pattern you found. Example: "Nên theo hệ thống. Trong lịch sử, sau chuỗi Thua-Thắng ở khoảng này, kết quả tiếp theo thường là Thắng."
+7.  If no historical patterns are found (less than 2 instances), state that and do not give a verdict.`;
     
-    analysisDetails += `\n**Global Performance (Toàn Cục):**\n`;
-    context.globalConfidenceStats.forEach(range => {
-        if (range.total > 0) {
-            analysisDetails += `  - Range ${range.min}-${range.max}%: Win Rate **${range.rate.toFixed(1)}%** (${range.wins}/${range.total})\n`;
-        }
-    });
+    const rangeDefs = [{min:50,max:60},{min:60,max:70},{min:70,max:80},{min:80,max:90},{min:90,max:100}];
+    const foundRange = rangeDefs.find(r => context.confidence >= r.min && (context.confidence < r.max || (r.max === 100 && context.confidence >= 100)));
+    
+    if (!foundRange) return null; // Should not happen
 
-    analysisDetails += `\n**Current Session Performance (Phiên):**\n`;
-    context.sessionConfidenceStats.forEach(range => {
-        if (range.total > 0) {
-            analysisDetails += `  - Range ${range.min}-${range.max}%: Win Rate **${range.rate.toFixed(1)}%** (${range.wins}/${range.total})\n`;
-        }
-    });
+    const rangeKey = `${foundRange.min}-${foundRange.max}`;
+    const historicalSequences = { ...context.sequenceData[rangeKey] };
+    const currentSequence = historicalSequences[context.currentSessionId] || "";
+    
+    // Remove current session from history for analysis
+    delete historicalSequences[context.currentSessionId];
 
-    const userQuery = `Analyze the performance of the system's current prediction using both Global and Session data. Provide a decisive recommendation (follow or go against) and a brief explanation in Vietnamese.\n\n${analysisDetails}`;
+    let analysisDetails = `
+- System's Current Prediction: ${context.prediction === 'P' ? 'PLAYER' : 'BANKER'}
+- Confidence: ${context.confidence.toFixed(1)}% (Bracket: ${rangeKey}%)
+- Current Session's Win/Loss Sequence for this Bracket: "${currentSequence}"
+- Historical Win/Loss Sequences for this Bracket (from all other sessions):
+${Object.entries(historicalSequences).map(([sesh, seq]) => `  - ${sesh}: "${seq}"`).join('\n')}
+`;
+
+    const userQuery = `Analyze the provided win/loss sequence data. Based on historical patterns, should I follow the system's current prediction or go against it? Provide a decisive recommendation and a brief explanation in Vietnamese.\n\n${analysisDetails}`;
     
     return { systemPrompt, userQuery };
 }
@@ -640,9 +681,15 @@ async function getGeminiAnalysis(context) {
         return;
     }
 
-    geminiResultDiv.innerHTML = '<p class="text-gray-500 animate-pulse">AI đang phân tích...</p>';
+    geminiResultDiv.innerHTML = '<p class="text-gray-500 animate-pulse">AI đang phân tích quy luật biểu đồ...</p>';
 
-    const { systemPrompt, userQuery } = constructGeminiPrompt(context);
+    const promptData = constructGeminiPrompt(context);
+    if (!promptData) {
+        geminiResultDiv.innerHTML = '<p class="text-yellow-400">Không thể phân tích cho khoảng tin cậy này.</p>';
+        return;
+    }
+
+    const { systemPrompt, userQuery } = promptData;
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
     try {
@@ -662,7 +709,7 @@ async function getGeminiAnalysis(context) {
             const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             geminiResultDiv.innerHTML = `<p>${formattedText}</p>`;
         } else {
-            geminiResultDiv.innerHTML = '<p class="text-yellow-400">AI không có phán quyết cho ván này.</p>';
+            geminiResultDiv.innerHTML = '<p class="text-yellow-400">AI không tìm thấy quy luật nào cho ván này.</p>';
         }
     } catch (error) {
         console.error("Gemini API Error:", error);
