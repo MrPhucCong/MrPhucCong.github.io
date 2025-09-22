@@ -187,7 +187,7 @@
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <h2 class="text-xl font-semibold mb-4 text-indigo-300 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
-                <span class="ml-2">Trợ lý AI Gemini</span>
+                <span class="ml-2">Phán Quyết Cuối Cùng (AI)</span>
             </h2>
             <div class="flex items-center gap-2 mb-4">
                 <div class="relative w-full">
@@ -200,13 +200,13 @@
                 <button onclick="saveApiKey()" class="btn bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0">Lưu</button>
             </div>
             <div id="geminiAnalysisResult" class="text-gray-300 bg-gray-900 p-4 rounded-lg min-h-[120px] transition-all duration-300">
-                <p class="text-gray-500">AI sẽ đưa ra nhận định sau khi có đủ dữ liệu...</p>
+                <p class="text-gray-500">AI sẽ đưa ra phán quyết sau khi có đủ dữ liệu...</p>
             </div>
         </div>
 
         <!-- Pattern Analysis -->
         <div id="analysis-card" class="bg-gray-800 p-6 rounded-2xl shadow-lg transition-shadow duration-500">
-            <h2 class="text-xl font-semibold mb-4 text-yellow-300">🧠 Phân Tích & Đề Xuất</h2>
+            <h2 class="text-xl font-semibold mb-4 text-yellow-300">🧠 Phân Tích & Đề Xuất (Hệ Thống)</h2>
             <div id="analysisResult" class="space-y-4">
                 <p class="text-gray-400 text-center py-8">Cần ít nhất 10 kết quả để bắt đầu phân tích...</p>
             </div>
@@ -371,7 +371,9 @@ let state = {
     sessions: {},
     matcher: new PatternMatcher(),
     currentPrediction: null,
-    goldenRange: null
+    goldenRange: null,
+    sessionConfidenceRanges: [],
+    globalConfidenceRanges: []
 };
 
 // --- STATS CALCULATION ---
@@ -381,6 +383,19 @@ function getPredictionStats(predictions) {
     const correct = predictions.filter(p => p.predicted === p.actual).length;
     return { rate: (correct / total) * 100, correct, total };
 }
+
+function calculateConfidenceRangeStats(predictions) {
+    const ranges = [{min:50,max:60},{min:60,max:70},{min:70,max:80},{min:80,max:90},{min:90,max:100}].map(r => ({...r, total:0, wins:0, rate: -1}));
+    
+    ranges.forEach(range => {
+        const predictionsForRange = predictions.filter(p => p.confidence >= range.min && (p.confidence < range.max || (range.max === 100 && p.confidence >= 100)));
+        range.total = predictionsForRange.length;
+        range.wins = predictionsForRange.filter(p => p.predicted === p.actual).length;
+        range.rate = range.total > 0 ? ((range.wins / range.total) * 100) : -1;
+    });
+    return ranges;
+}
+
 
 // --- UI UPDATE FUNCTIONS ---
 function updateBigRoadUI() {
@@ -440,8 +455,7 @@ function updateAnalysisUI() {
 
     let confidenceRangeString = '';
     if (confidence) {
-        const ranges = [{min:50,max:60},{min:60,max:70},{min:70,max:80},{min:80,max:90},{min:90,max:100}];
-        const foundRange = ranges.find(r => confidence >= r.min && (confidence < r.max || (r.max === 100 && confidence >= 100)));
+        const foundRange = state.sessionConfidenceRanges.find(r => confidence >= r.min && (confidence < r.max || (r.max === 100 && confidence >= 100)));
         if (foundRange) {
             confidenceRangeString = ` (Khoảng ${foundRange.min}-${foundRange.max}%)`;
         }
@@ -481,43 +495,37 @@ function updateAnalysisUI() {
         }
         analysisResultDiv.innerHTML = `${optimalLengthDisplay}<div class="bg-gray-700 p-4 rounded-lg"><p class="text-gray-300 whitespace-pre-wrap">${analysisText}</p></div>${predictionBlockHTML}`;
         
-        // --- GEMINI API CALL (with Global Stats) ---
-        const sessionPredictions = state.sessions[state.currentSessionId]?.predictions || [];
-        const sessionStats = getPredictionStats(sessionPredictions);
-        const allPredictions = Object.values(state.sessions).flatMap(s => s.predictions || []);
-        const globalStats = getPredictionStats(allPredictions);
-
         const context = {
             prediction: prediction,
-            recommendation: recommendation,
             confidence: confidence,
-            history: session.history,
-            sessionStats: sessionStats,
-            globalStats: globalStats,
-            goldenRange: state.goldenRange,
-            isInGoldenRange: isInGoldenRange
+            sessionConfidenceStats: state.sessionConfidenceRanges,
+            globalConfidenceStats: state.globalConfidenceRanges,
         };
         getGeminiAnalysis(context);
 
     } else {
         analysisResultDiv.innerHTML = `${optimalLengthDisplay}<p class="text-gray-400 text-center py-8 whitespace-pre-wrap">${analysisText}</p>`;
-        document.getElementById('geminiAnalysisResult').innerHTML = '<p class="text-gray-500">AI sẽ đưa ra nhận định sau khi có đủ dữ liệu...</p>';
+        document.getElementById('geminiAnalysisResult').innerHTML = '<p class="text-gray-500">AI sẽ đưa ra phán quyết sau khi có đủ dữ liệu...</p>';
     }
 }
 function updateConfidenceStatsUI() {
     if (!state.currentSessionId || !state.sessions[state.currentSessionId]) return;
     
-    const currentConfidence = state.currentPrediction?.confidence;
+    // Calculate for current session
     const sessionPredictions = state.sessions[state.currentSessionId].predictions || [];
+    state.sessionConfidenceRanges = calculateConfidenceRangeStats(sessionPredictions);
+
+    // Calculate globally
+    const allPredictions = Object.values(state.sessions).flatMap(s => s.predictions || []);
+    state.globalConfidenceRanges = calculateConfidenceRangeStats(allPredictions);
+
+    // Continue with UI update for the session table
+    const currentConfidence = state.currentPrediction?.confidence;
     const previousConfidence = sessionPredictions.length > 0 ? sessionPredictions[sessionPredictions.length - 1].confidence : null;
 
-    const ranges = [{min:50,max:60},{min:60,max:70},{min:70,max:80},{min:80,max:90},{min:90,max:100}].map(r => ({...r, total:0, wins:0}));
     let bestRange = null, maxRate = -1;
-    ranges.forEach(range => {
+    state.sessionConfidenceRanges.forEach(range => {
         const predictionsForRange = sessionPredictions.filter(p => p.confidence >= range.min && (p.confidence < range.max || (range.max === 100 && p.confidence >= 100)));
-        range.total = predictionsForRange.length;
-        range.wins = predictionsForRange.filter(p => p.predicted === p.actual).length;
-        range.rate = range.total > 0 ? ((range.wins / range.total) * 100) : -1;
         let trendIndicator = '', streak = 0;
         if (predictionsForRange.length >= 1) {
             const lastWin = (predictionsForRange.slice(-1)[0].predicted === predictionsForRange.slice(-1)[0].actual);
@@ -530,6 +538,7 @@ function updateConfidenceStatsUI() {
         if (range.total >= 3 && range.rate > maxRate) { maxRate = range.rate; bestRange = range; }
     });
     state.goldenRange = bestRange;
+    
     const recommendationDiv = document.getElementById('confidenceRecommendation');
     if (bestRange) recommendationDiv.innerHTML = `<p class="text-sm text-yellow-300"><span class="font-bold">✨ Khoảng Vàng:</span> Tỷ lệ thắng cao nhất là <b class="text-green-400">${maxRate.toFixed(1)}%</b> trong khoảng <b class="text-white">${bestRange.min}%-${bestRange.max}%</b>.</p>`;
     else recommendationDiv.innerHTML = `<p class="text-sm text-gray-400">Chưa đủ dữ liệu để tìm khoảng vàng (cần tối thiểu 3 phán đoán trong 1 khoảng).</p>`;
@@ -538,9 +547,8 @@ function updateConfidenceStatsUI() {
     if (sessionPredictions.length === 0 && !currentConfidence) {
         tableDiv.innerHTML = '<p class="text-gray-500 text-center py-4">Chưa có dữ liệu thống kê.</p>';
     } else {
-        ranges.forEach(range => {
+        state.sessionConfidenceRanges.forEach(range => {
             const highlightClass = range === bestRange ? 'bg-green-800 bg-opacity-40 border border-green-500' : 'bg-gray-700 bg-opacity-50';
-            
             let indicatorsHTML = '';
             if (currentConfidence && currentConfidence >= range.min && (currentConfidence < range.max || (range.max === 100 && currentConfidence >= 100))) {
                  indicatorsHTML += `<span class="ml-2 px-1.5 py-0.5 text-xs rounded font-semibold bg-blue-600 text-white" title="Phán đoán hiện tại">Hiện tại</span>`;
@@ -549,10 +557,8 @@ function updateConfidenceStatsUI() {
                 const marginLeft = indicatorsHTML ? 'ml-1' : 'ml-2';
                 indicatorsHTML += `<span class="${marginLeft} px-1.5 py-0.5 text-xs rounded font-semibold bg-gray-500 text-white" title="Phán đoán ván trước">Trước</span>`;
             }
-
-            // Individual Bar Chart Logic
             const predictionsForRange = sessionPredictions.filter(p => p.confidence >= range.min && (p.confidence < range.max || (p.confidence >= 100 && range.max === 100)));
-            const displayedPredictions = predictionsForRange.slice(-30); // Show last 30
+            const displayedPredictions = predictionsForRange.slice(-30);
             let individualBarsHTML = `<div class="flex items-end justify-center gap-px h-5 my-auto overflow-hidden" title="Hiển thị tối đa 30 ván gần nhất">`;
             if (displayedPredictions.length > 0) {
                 for (const p of displayedPredictions) {
@@ -565,8 +571,6 @@ function updateConfidenceStatsUI() {
                 individualBarsHTML += `<div class="w-full text-center"><span class="text-gray-600 text-xs">Chưa có</span></div>`;
             }
             individualBarsHTML += '</div>';
-
-
             html += `<div class="grid gap-x-2 items-center ${highlightClass} p-3 rounded-lg mt-2 text-sm" style="grid-template-columns: 2fr 4fr 2fr 2fr 3fr;">
                 <span class="font-medium text-gray-300">${range.min}%-${range.max}%</span>
                 ${individualBarsHTML}
@@ -583,38 +587,42 @@ function updateAllUI() {
     updateBigRoadUI();
     updateAccuracyUI();
     updateGlobalAccuracyUI();
+    updateConfidenceStatsUI(); // Must be before updateAnalysisUI
     updateAnalysisUI();
-    updateConfidenceStatsUI();
 }
 
 // --- GEMINI API INTEGRATION ---
 function constructGeminiPrompt(context) {
-    const systemPrompt = `You are an expert Baccarat analyst AI assistant named Gemini.
-Your task is to analyze the provided game data (including current session and global stats) and give a concise, insightful commentary IN VIETNAMESE.
-Your goal is to explain the current situation and the system's prediction, NOT to give a new, conflicting prediction.
-Be brief (2-4 sentences max), friendly, and act as a helpful advisor. Use Markdown for bolding key terms like **Player**, **Banker**, **cầu bệt**, **cầu 1-1**, etc. NEVER use headers or lists.`;
+    const systemPrompt = `You are a master strategist AI for a Baccarat analysis tool. Your primary role is to provide a final, decisive recommendation: **"Nên theo hệ thống"** or **"Nên đi ngược lại hệ thống"**.
 
-    let analysisDetails = `
-- System's Prediction: ${context.prediction === 'P' ? 'PLAYER' : 'BANKER'}
-- Reason: ${context.recommendation}
-- Confidence: ${context.confidence.toFixed(1)}%
-- Current Session Win Rate: ${context.sessionStats.rate.toFixed(1)}%
-- Global System Win Rate (all sessions): ${context.globalStats.rate.toFixed(1)}% (${context.globalStats.correct}/${context.globalStats.total})
-- Game History (last 20 hands): ${context.history.slice(-20).join(', ')}
-`;
+You will be given two sets of performance data for the system's prediction confidence brackets:
+1.  **Global Performance (Toàn Cục):** Based on all historical data. This is the most reliable long-term indicator.
+2.  **Session Performance (Phiên):** Based only on the current game session. This shows the short-term trend.
 
-    if (context.goldenRange) {
-        analysisDetails += `- Golden Range: The ${context.goldenRange.min}%-${context.goldenRange.max}% confidence range currently has a **${context.goldenRange.rate.toFixed(1)}%** win rate.`;
-        if (context.isInGoldenRange) {
-            analysisDetails += ` (The current prediction IS in this effective range).`;
-        } else {
-            analysisDetails += ` (The current prediction IS NOT in this effective range).`;
+**Your decision-making process:**
+1.  Identify the confidence bracket for the system's current prediction.
+2.  **Prioritize the Global Performance.** If the global win rate for that bracket is strong (>= 55%), your default recommendation is "Nên theo". If it's weak (< 55%), your default is "Nên đi ngược lại".
+3.  Use the Session Performance as a secondary factor. If the session trend confirms the global trend, state it. If it contradicts, advise caution but still lean on the global data.
+
+Your response must be IN VIETNAMESE, start with the final recommendation, and then provide a 1-2 sentence explanation. Be decisive.`;
+
+    let analysisDetails = `\n- System's Current Prediction: ${context.prediction === 'P' ? 'PLAYER' : 'BANKER'}\n- Confidence: ${context.confidence.toFixed(1)}%\n\n--- Performance Data ---\n`;
+    
+    analysisDetails += `\n**Global Performance (Toàn Cục):**\n`;
+    context.globalConfidenceStats.forEach(range => {
+        if (range.total > 0) {
+            analysisDetails += `  - Range ${range.min}-${range.max}%: Win Rate **${range.rate.toFixed(1)}%** (${range.wins}/${range.total})\n`;
         }
-    } else {
-        analysisDetails += `- Golden Range: Not yet determined for this session.`;
-    }
+    });
 
-    const userQuery = `Here is the current Baccarat game state. Please provide your brief, friendly analysis in Vietnamese based on this data.\n\n${analysisDetails}`;
+    analysisDetails += `\n**Current Session Performance (Phiên):**\n`;
+    context.sessionConfidenceStats.forEach(range => {
+        if (range.total > 0) {
+            analysisDetails += `  - Range ${range.min}-${range.max}%: Win Rate **${range.rate.toFixed(1)}%** (${range.wins}/${range.total})\n`;
+        }
+    });
+
+    const userQuery = `Analyze the performance of the system's current prediction using both Global and Session data. Provide a decisive recommendation (follow or go against) and a brief explanation in Vietnamese.\n\n${analysisDetails}`;
     
     return { systemPrompt, userQuery };
 }
@@ -624,13 +632,11 @@ async function getGeminiAnalysis(context) {
     const apiKey = localStorage.getItem('geminiApiKey_v1');
 
     if (!apiKey) {
-        geminiResultDiv.innerHTML = '<p class="text-yellow-400">Vui lòng nhập API Key của Gemini để sử dụng tính năng này.</p>';
+        geminiResultDiv.innerHTML = '<p class="text-yellow-400">Vui lòng nhập API Key để nhận Phán Quyết Cuối Cùng.</p>';
         return;
     }
-
-    // Do not call API if context is empty (e.g., on initial load)
     if (!context || !context.prediction) {
-        geminiResultDiv.innerHTML = '<p class="text-gray-500">AI sẽ đưa ra nhận định sau khi có đủ dữ liệu...</p>';
+        geminiResultDiv.innerHTML = '<p class="text-gray-500">AI sẽ đưa ra phán quyết sau khi có đủ dữ liệu...</p>';
         return;
     }
 
@@ -642,31 +648,22 @@ async function getGeminiAnalysis(context) {
     try {
         const payload = {
             contents: [{ parts: [{ text: userQuery }] }],
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
+            systemInstruction: { parts: [{ text: systemPrompt }] },
         };
-
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
-        if (!response.ok) {
-            throw new Error(`API call failed with status: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`API call failed: ${response.status}`);
         const result = await response.json();
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
         if (text) {
             const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             geminiResultDiv.innerHTML = `<p>${formattedText}</p>`;
         } else {
-            geminiResultDiv.innerHTML = '<p class="text-yellow-400">AI không có nhận định cho ván này.</p>';
+            geminiResultDiv.innerHTML = '<p class="text-yellow-400">AI không có phán quyết cho ván này.</p>';
         }
-
     } catch (error) {
         console.error("Gemini API Error:", error);
         geminiResultDiv.innerHTML = '<p class="text-red-400">Lỗi: API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại.</p>';
@@ -823,10 +820,9 @@ function saveApiKey() {
         localStorage.removeItem('geminiApiKey_v1');
         showToast('API Key đã được xóa.', 'info');
     }
-    // Re-check Gemini status without a full prediction context
     const geminiResultDiv = document.getElementById('geminiAnalysisResult');
     if (!apiKey) {
-         geminiResultDiv.innerHTML = '<p class="text-yellow-400">Vui lòng nhập API Key của Gemini để sử dụng tính năng này.</p>';
+         geminiResultDiv.innerHTML = '<p class="text-yellow-400">Vui lòng nhập API Key để nhận Phán Quyết Cuối Cùng.</p>';
     } else {
         geminiResultDiv.innerHTML = '<p class="text-gray-500">API Key đã lưu. AI sẽ phân tích ở ván tiếp theo.</p>';
     }
