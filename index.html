@@ -3,53 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chuyển Đổi Ảnh Sang PDF</title>
+    <title>Trích xuất ảnh từ Link sang PDF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-        .file-input-label {
-            cursor: pointer;
+        #generate-btn, #fetch-btn {
             transition: all 0.2s ease-in-out;
         }
-        .file-input-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        #generate-btn {
-            transition: all 0.2s ease-in-out;
-        }
-        #generate-btn:disabled {
+        #generate-btn:disabled, #fetch-btn:disabled {
             cursor: not-allowed;
             opacity: 0.6;
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+            border: 2px dashed #4f46e5;
+        }
+        .sortable-chosen {
+            cursor: grabbing;
         }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
+    <div class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
         <!-- Header -->
         <div class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Trình Chuyển Đổi Ảnh Sang PDF</h1>
-            <p class="text-gray-500 mt-2">Tải lên các tệp ảnh của bạn để gộp thành một tệp PDF duy nhất.</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Trích xuất Ảnh từ Link sang PDF</h1>
+            <p class="text-gray-500 mt-2">Dán một liên kết trang web để tải về tất cả hình ảnh, sắp xếp và tạo tệp PDF.</p>
         </div>
 
-        <!-- File Upload Area -->
+        <!-- URL Input Area -->
         <div class="mb-6">
-            <input type="file" id="image-input" multiple accept="image/*" class="hidden">
-            <label for="image-input" class="file-input-label flex flex-col items-center justify-center w-full h-48 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl hover:bg-gray-100">
-                <svg class="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                <p class="text-gray-600 font-medium">Nhấn để chọn ảnh</p>
-                <p class="text-xs text-gray-500 mt-1">Hỗ trợ các định dạng PNG, JPG, WEBP, v.v.</p>
-            </label>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="url" id="url-input" placeholder="https://example.com/trang-web-co-anh" class="flex-grow w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button id="fetch-btn" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                    Tải Ảnh
+                </button>
+            </div>
         </div>
 
-        <!-- Selected Files Preview -->
+        <!-- Fetched Images Preview -->
         <div id="preview-container" class="mb-6 text-left">
-            <p id="file-info" class="text-gray-600 font-medium">Chưa có tệp nào được chọn.</p>
-            <div id="image-previews" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mt-4"></div>
+            <p id="file-info" class="text-gray-600 font-medium">Nhập URL và nhấn "Tải Ảnh" để bắt đầu.</p>
+            <div id="image-previews" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 mt-4 min-h-[100px]">
+                <!-- Draggable images will be injected here -->
+            </div>
         </div>
         
         <!-- Action Button -->
@@ -62,132 +64,195 @@
     </div>
 
     <script>
-        const imageInput = document.getElementById('image-input');
+        const urlInput = document.getElementById('url-input');
+        const fetchBtn = document.getElementById('fetch-btn');
         const generateBtn = document.getElementById('generate-btn');
         const statusDiv = document.getElementById('status');
         const fileInfo = document.getElementById('file-info');
         const imagePreviews = document.getElementById('image-previews');
 
-        let selectedFiles = [];
+        // Initialize SortableJS for drag-and-drop
+        new Sortable(imagePreviews, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+        });
 
-        // Update UI when files are selected
-        imageInput.addEventListener('change', () => {
-            selectedFiles = Array.from(imageInput.files);
-            imagePreviews.innerHTML = ''; // Clear previous previews
-            if (selectedFiles.length > 0) {
-                fileInfo.textContent = `${selectedFiles.length} tệp đã được chọn:`;
-                selectedFiles.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = 'w-full h-20 object-cover rounded-md border';
-                        img.title = file.name;
-                        imagePreviews.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
+        fetchBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                statusDiv.textContent = 'Vui lòng nhập một URL hợp lệ.';
+                return;
+            }
+            
+            fetchBtn.disabled = true;
+            fetchBtn.textContent = 'Đang tải...';
+            statusDiv.textContent = 'Đang tìm kiếm hình ảnh...';
+            imagePreviews.innerHTML = '';
+            fileInfo.textContent = 'Đang tải...';
+
+            try {
+                // We use a CORS proxy to fetch the HTML from the client-side
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`Lỗi mạng: ${response.statusText}`);
+                const html = await response.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const images = doc.querySelectorAll('img');
+                const imageUrls = new Set(); // Use a Set to avoid duplicate images
+
+                images.forEach(img => {
+                    const src = img.getAttribute('src');
+                    if (src) {
+                        try {
+                            // Create an absolute URL from a potentially relative one
+                            const absoluteUrl = new URL(src, url).href;
+                            imageUrls.add(absoluteUrl);
+                        } catch(e) {
+                            console.warn('Bỏ qua URL không hợp lệ:', src);
+                        }
+                    }
                 });
-            } else {
-                fileInfo.textContent = 'Chưa có tệp nào được chọn.';
+
+                if (imageUrls.size === 0) {
+                    fileInfo.textContent = 'Không tìm thấy hình ảnh nào trên trang này.';
+                    return;
+                }
+
+                fileInfo.textContent = `Tìm thấy ${imageUrls.size} ảnh. Kéo để sắp xếp.`;
+
+                imageUrls.forEach(imageUrl => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'relative group cursor-grab';
+                    wrapper.setAttribute('data-src', imageUrl);
+
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imageUrl;
+                    imgElement.className = 'w-full h-24 object-cover rounded-md border shadow-sm';
+                    imgElement.onerror = () => { wrapper.style.display = 'none'; }; // Hide if image fails to load
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.className = 'absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none';
+                    removeBtn.onclick = () => wrapper.remove();
+                    
+                    wrapper.appendChild(imgElement);
+                    wrapper.appendChild(removeBtn);
+                    imagePreviews.appendChild(wrapper);
+                });
+
+            } catch (error) {
+                console.error('Lỗi khi tải ảnh:', error);
+                statusDiv.textContent = 'Không thể tải ảnh từ URL này. Vui lòng kiểm tra lại.';
+                fileInfo.textContent = 'Đã xảy ra lỗi.';
+            } finally {
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = 'Tải Ảnh';
+                statusDiv.textContent = '';
             }
         });
 
-        // Handle PDF generation on button click
         generateBtn.addEventListener('click', async () => {
-            if (selectedFiles.length === 0) {
-                statusDiv.textContent = 'Vui lòng chọn ít nhất một ảnh.';
-                statusDiv.classList.add('text-red-500');
+            const imageElements = Array.from(imagePreviews.querySelectorAll('[data-src]'));
+            if (imageElements.length === 0) {
+                statusDiv.textContent = 'Không có ảnh nào để tạo PDF.';
                 return;
             }
 
-            // Disable button and show loading status
             generateBtn.disabled = true;
             generateBtn.textContent = 'Đang xử lý...';
             statusDiv.textContent = 'Bắt đầu tạo PDF...';
-            statusDiv.classList.remove('text-red-500');
 
             try {
-                // Initialize jsPDF. 'p' for portrait, 'mm' for millimeters, 'a4' for page size.
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('p', 'mm', 'a4');
+                let addedImages = 0;
 
-                for (let i = 0; i < selectedFiles.length; i++) {
-                    const file = selectedFiles[i];
-                    statusDiv.textContent = `Đang thêm ảnh ${i + 1}/${selectedFiles.length}: ${file.name}`;
+                for (let i = 0; i < imageElements.length; i++) {
+                    const el = imageElements[i];
+                    const url = el.getAttribute('data-src');
+                    statusDiv.textContent = `Đang xử lý ảnh ${i + 1}/${imageElements.length}...`;
                     
-                    const imgData = await readFileAsDataURL(file);
-                    const imgDimensions = await getImageDimensions(imgData);
+                    try {
+                        const imgData = await convertImageToDataURL(url);
+                        if (addedImages > 0) {
+                           pdf.addPage();
+                        }
+                        
+                        const imgDimensions = await getImageDimensions(imgData);
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = pdf.internal.pageSize.getHeight();
+                        const imgRatio = imgDimensions.width / imgDimensions.height;
+                        const pageRatio = pdfWidth / pdfHeight;
 
-                    // A4 page dimensions in mm
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = pdf.internal.pageSize.getHeight();
-                    
-                    // Calculate image ratio to fit page
-                    const imgRatio = imgDimensions.width / imgDimensions.height;
-                    const pageRatio = pdfWidth / pdfHeight;
+                        let finalWidth, finalHeight;
+                        if (imgRatio > pageRatio) {
+                            finalWidth = pdfWidth;
+                            finalHeight = pdfWidth / imgRatio;
+                        } else {
+                            finalHeight = pdfHeight;
+                            finalWidth = pdfHeight * imgRatio;
+                        }
 
-                    let finalWidth, finalHeight, posX, posY;
+                        const posX = (pdfWidth - finalWidth) / 2;
+                        const posY = (pdfHeight - finalHeight) / 2;
+                        
+                        pdf.addImage(imgData, 'JPEG', posX, posY, finalWidth, finalHeight);
+                        addedImages++;
 
-                    if (imgRatio > pageRatio) {
-                        // Image is wider than page
-                        finalWidth = pdfWidth;
-                        finalHeight = pdfWidth / imgRatio;
-                    } else {
-                        // Image is taller than or equal to page aspect ratio
-                        finalHeight = pdfHeight;
-                        finalWidth = pdfHeight * imgRatio;
-                    }
-
-                    // Center the image on the page
-                    posX = (pdfWidth - finalWidth) / 2;
-                    posY = (pdfHeight - finalHeight) / 2;
-
-                    // Add the image to the PDF
-                    pdf.addImage(imgData, 'JPEG', posX, posY, finalWidth, finalHeight);
-
-                    // Add a new page for the next image, but not after the last one
-                    if (i < selectedFiles.length - 1) {
-                        pdf.addPage();
+                    } catch (error) {
+                         console.error(`Bỏ qua ảnh không thể tải: ${url}`, error);
                     }
                 }
-
-                statusDiv.textContent = 'Tạo PDF thành công! Đang tải xuống...';
-                pdf.save('mrphuccong-images.pdf');
                 
-                setTimeout(() => {
-                    statusDiv.textContent = '';
-                }, 3000);
+                if (addedImages > 0) {
+                    statusDiv.textContent = 'Tạo PDF thành công! Đang tải xuống...';
+                    pdf.save('mrphuccong-web-images.pdf');
+                } else {
+                    statusDiv.textContent = 'Không thể xử lý bất kỳ ảnh nào.';
+                }
+                
+                setTimeout(() => { statusDiv.textContent = ''; }, 3000);
 
             } catch (error) {
                 console.error('Lỗi khi tạo PDF:', error);
-                statusDiv.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
-                statusDiv.classList.add('text-red-500');
+                statusDiv.textContent = 'Đã xảy ra lỗi khi tạo PDF.';
             } finally {
-                // Re-enable button
                 generateBtn.disabled = false;
                 generateBtn.textContent = 'Tạo File PDF';
             }
         });
-
-        // Helper function to read a file as a Data URL
-        function readFileAsDataURL(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+        
+        async function convertImageToDataURL(url) {
+            // Attempt to fetch via a CORS proxy to avoid cross-origin issues
+            try {
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Proxy fetch failed');
+                const blob = await response.blob();
+                return await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (proxyError) {
+                console.error(`Proxy load failed for ${url}:`, proxyError);
+                throw new Error(`Failed to load image: ${url}`);
+            }
         }
 
-        // Helper function to get image dimensions
         function getImageDimensions(dataUrl) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => resolve({ width: img.width, height: img.height });
-                img.onerror = reject;
+                img.onerror = () => resolve({ width: 1, height: 1 }); // Fallback
                 img.src = dataUrl;
             });
         }
     </script>
 </body>
 </html>
+
