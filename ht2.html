@@ -1476,89 +1476,26 @@ function initializeApp() {
 document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
 <script>
-      // =================== IFRAME COMMUNICATION ADAPTER - HT2 ONLY ===================
-// File: ht2-adapter.js
-
+// =================== IFRAME COMMUNICATION FOR HT2 ===================
 (function() {
-    // ĐỊNH DANH RIÊNG CHO HT2
-    const SYSTEM_ID = 'ht2';
-    const STORAGE_KEY_SESSIONS = 'HT2_FixedOptimized_Sessions_v2';
-    const STORAGE_KEY_LAST = 'HT2_LastActiveSession_v2';
-    
-    // Biến trạng thái riêng cho HT2
-    const ht2State = {
-        sessions: {},
-        currentSessionId: null,
-        currentPrediction: null,
-        currentChotPredictionForLog: null,
-        history: [],
-        strategy: 'DYNAMIC_OPTIMAL' // Default strategy for HT2
-    };
-
-    // Notify parent that HT2 is ready
+    // Notify parent that system is ready
     window.addEventListener('load', function() {
-        console.log('HT2 Adapter: Fixed & Optimized System Initialized');
-        
         setTimeout(() => {
             window.parent.postMessage({
                 source: 'ht2',
                 type: 'ready'
             }, '*');
-            
-            // Load HT2 sessions
-            loadHt2Sessions();
-        }, 1500);
+        }, 1000);
     });
 
-    // Listen for messages from parent (Master System)
+    // Listen for messages from parent
     window.addEventListener('message', function(event) {
         if (event.data.source === 'master') {
             handleMasterCommand(event.data);
         }
     });
 
-    function loadHt2Sessions() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY_SESSIONS);
-            const lastActive = localStorage.getItem(STORAGE_KEY_LAST);
-            
-            if (saved) {
-                ht2State.sessions = JSON.parse(saved);
-                ht2State.currentSessionId = lastActive;
-                
-                // If there's a current session, restore analysis
-                if (ht2State.currentSessionId && ht2State.sessions[ht2State.currentSessionId]) {
-                    const session = ht2State.sessions[ht2State.currentSessionId];
-                    ht2State.history = session.history || [];
-                    ht2State.strategy = session.strategy || 'DYNAMIC_OPTIMAL';
-                    
-                    // Trigger analysis update
-                    if (ht2State.history.length >= 8) {
-                        updateHt2Analysis();
-                    }
-                }
-            } else {
-                // Create default session if none exists
-                createHt2Session({ name: 'Phiên HT2 mặc định' });
-            }
-        } catch (e) {
-            console.error('HT2: Error loading sessions:', e);
-            createHt2Session({ name: 'Phiên HT2 mặc định' });
-        }
-        
-        sendSessionInfo();
-    }
-
-    function saveHt2Sessions() {
-        localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(ht2State.sessions));
-        if (ht2State.currentSessionId) {
-            localStorage.setItem(STORAGE_KEY_LAST, ht2State.currentSessionId);
-        }
-    }
-
     function handleMasterCommand(data) {
-        console.log('HT2 received command:', data.command);
-        
         switch(data.command) {
             case 'get_accuracy':
                 sendAccuracyUpdate();
@@ -1577,372 +1514,48 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 break;
                 
             case 'create_session':
-                createHt2Session(data.data);
+                createSession(data.data);
                 break;
                 
             case 'rename_session':
-                renameHt2Session(data.data);
+                renameSession(data.data);
                 break;
                 
             case 'load_session':
-                loadHt2Session(data.data);
+                loadSession(data.data);
                 break;
                 
             case 'add_result':
-                addHt2Result(data.data);
+                addResult(data.data);
                 break;
                 
             case 'undo_last':
-                undoHt2Last();
+                undoLast();
                 break;
                 
             case 'clear_history':
-                clearHt2History();
+                clearCurrentSessionHistory();
                 break;
                 
             case 'import_data':
-                importHt2Data(data.data);
+                importSimulatedData(data.data);
                 break;
                 
             case 'export_data':
-                exportHt2Data();
+                exportSessionData();
                 break;
                 
             case 'reset_system':
-                resetHt2System();
+                resetSystem();
                 break;
         }
     }
 
-    // =================== HT2 SPECIFIC FUNCTIONS ===================
-    
-    function createHt2Session(sessionData) {
-        if (!sessionData || !sessionData.name) return;
-        
-        const newId = sessionData.id || `ht2-session-${Date.now()}`;
-        ht2State.currentSessionId = newId;
-        ht2State.sessions[newId] = {
-            id: newId,
-            name: sessionData.name,
-            history: [],
-            chotPredictions: [],
-            created: new Date().toISOString(),
-            systemType: 'FIXED_OPTIMIZED',
-            strategy: ht2State.strategy,
-            stats: {
-                totalGames: 0,
-                totalPredictions: 0,
-                correctPredictions: 0,
-                strategyPerformance: {}
-            }
-        };
-        
-        ht2State.history = [];
-        ht2State.currentPrediction = null;
-        ht2State.currentChotPredictionForLog = null;
-        
-        saveHt2Sessions();
-        sendSessionInfo();
-        
-        console.log('HT2: Created new session:', sessionData.name);
-    }
-
-    function addHt2Result(result) {
-        if (!ht2State.currentSessionId) {
-            // Create default session if none exists
-            createHt2Session({ name: 'Phiên HT2 mặc định' });
-        }
-        
-        const session = ht2State.sessions[ht2State.currentSessionId];
-        if (!session) return;
-        
-        // Add to history
-        ht2State.history.push(result);
-        session.history = ht2State.history;
-        session.stats.totalGames = ht2State.history.length;
-        
-        // Run HT2-specific fixed strategy analysis
-        const analysisResult = runHt2FixedStrategyAnalysis();
-        
-        if (analysisResult) {
-            ht2State.currentPrediction = analysisResult;
-            
-            // Log prediction for accuracy tracking
-            if (session.history.length > 8) { // Only track after we have enough history
-                const lastPrediction = session.chotPredictions[session.chotPredictions.length - 1];
-                if (lastPrediction) {
-                    lastPrediction.actual = result;
-                    
-                    // Update stats
-                    session.stats.totalPredictions++;
-                    if (lastPrediction.predicted === result) {
-                        session.stats.correctPredictions++;
-                    }
-                    
-                    // Update strategy performance
-                    const strategy = lastPrediction.strategy;
-                    if (!session.stats.strategyPerformance[strategy]) {
-                        session.stats.strategyPerformance[strategy] = {
-                            total: 0,
-                            correct: 0
-                        };
-                    }
-                    session.stats.strategyPerformance[strategy].total++;
-                    if (lastPrediction.predicted === result) {
-                        session.stats.strategyPerformance[strategy].correct++;
-                    }
-                }
-            }
-            
-            // Create new prediction for next round
-            ht2State.currentChotPredictionForLog = {
-                predicted: analysisResult.prediction,
-                actual: null, // Will be filled when next result comes
-                source: 'HT2_FIXED_STRATEGY',
-                strategy: analysisResult.strategy,
-                confidence: analysisResult.confidence,
-                timestamp: new Date().toISOString()
-            };
-            
-            session.chotPredictions.push(ht2State.currentChotPredictionForLog);
-        }
-        
-        saveHt2Sessions();
-        
-        // Send updates to parent
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
-        
-        console.log('HT2: Added result:', result, 'Prediction:', ht2State.currentPrediction);
-    }
-
-    function runHt2FixedStrategyAnalysis() {
-        // Đây là nơi triển khai LOGIC RIÊNG của HT2 - Fixed & Optimized Strategy
-        // Logic này KHÁC với HT1
-        
-        if (ht2State.history.length < 8) {
-            return null;
-        }
-        
-        const recent = ht2State.history;
-        
-        // Apply current strategy
-        switch(ht2State.strategy) {
-            case 'BANKER_BIAS':
-                return runBankerBiasStrategy(recent);
-                
-            case 'DYNAMIC_OPTIMAL':
-                return runDynamicOptimalStrategy(recent);
-                
-            case 'FIXED_LENGTH':
-                return runFixedLengthStrategy(recent);
-                
-            case 'TREND_FOLLOW':
-                return runTrendFollowStrategy(recent);
-                
-            default:
-                return runDynamicOptimalStrategy(recent);
-        }
-    }
-
-    function runBankerBiasStrategy(recent) {
-        // Strategy: Always prefer Banker, but switch if losing streak
-        const last20 = recent.slice(-20);
-        const bankerCount = last20.filter(r => r === 'B').length;
-        const playerCount = last20.filter(r => r === 'P').length;
-        
-        // Check for banker losing streak
-        const last5 = recent.slice(-5);
-        const last5Banker = last5.filter(r => r === 'B').length;
-        
-        if (last5Banker <= 1) { // Banker losing streak
-            return {
-                prediction: 'P',
-                strategy: 'BANKER_BIAS_REVERSE',
-                confidence: 60
-            };
-        }
-        
-        return {
-            prediction: 'B',
-            strategy: 'BANKER_BIAS',
-            confidence: 55 + Math.min(30, bankerCount - playerCount)
-        };
-    }
-
-    function runDynamicOptimalStrategy(recent) {
-        // Strategy: Dynamic optimization based on multiple factors
-        const last10 = recent.slice(-10);
-        const last5 = recent.slice(-5);
-        const last3 = recent.slice(-3);
-        
-        // Factor 1: Recent trend
-        const last3Banker = last3.filter(r => r === 'B').length;
-        const last3Player = last3.filter(r => r === 'P').length;
-        
-        // Factor 2: Pattern detection
-        const patterns = findHt2OptimalPatterns(last10);
-        
-        // Factor 3: Overall balance
-        const totalBanker = last10.filter(r => r === 'B').length;
-        const totalPlayer = last10.filter(r => r === 'P').length;
-        
-        // Decision making
-        let prediction = null;
-        let strategy = '';
-        let confidence = 50;
-        
-        // Priority 1: Strong pattern detected
-        if (patterns.bestPattern && patterns.bestPattern.confidence >= 70) {
-            prediction = patterns.bestPattern.prediction;
-            strategy = 'DYNAMIC_PATTERN';
-            confidence = patterns.bestPattern.confidence;
-        }
-        // Priority 2: Strong recent trend
-        else if (Math.abs(last3Banker - last3Player) === 3) {
-            prediction = last3Banker > last3Player ? 'B' : 'P';
-            strategy = 'STRONG_TREND';
-            confidence = 70;
-        }
-        // Priority 3: Balance correction
-        else if (Math.abs(totalBanker - totalPlayer) >= 4) {
-            prediction = totalBanker > totalPlayer ? 'P' : 'B'; // Bet against imbalance
-            strategy = 'BALANCE_CORRECTION';
-            confidence = 65;
-        }
-        // Priority 4: Follow the majority
-        else {
-            prediction = totalBanker > totalPlayer ? 'B' : 'P';
-            strategy = 'MAJORITY_FOLLOW';
-            confidence = 55 + Math.abs(totalBanker - totalPlayer) * 3;
-        }
-        
-        return {
-            prediction: prediction,
-            strategy: strategy,
-            confidence: confidence
-        };
-    }
-
-    function runFixedLengthStrategy(recent) {
-        // Strategy: Fixed rules based on pattern lengths
-        const last5 = recent.slice(-5);
-        
-        // Rule 1: After 2 consecutive same, bet opposite
-        if (last5.length >= 2) {
-            const last2 = last5.slice(-2);
-            if (last2[0] === last2[1]) {
-                return {
-                    prediction: last2[0] === 'P' ? 'B' : 'P',
-                    strategy: 'FIXED_LENGTH_2',
-                    confidence: 65
-                };
-            }
-        }
-        
-        // Rule 2: After 3 alternating, continue pattern
-        if (last5.length >= 3) {
-            const last3 = last5.slice(-3);
-            if (last3[0] !== last3[1] && last3[1] !== last3[2] && last3[0] === last3[2]) {
-                return {
-                    prediction: last3[1] === 'P' ? 'B' : 'P', // Continue alternating
-                    strategy: 'FIXED_LENGTH_3',
-                    confidence: 60
-                };
-            }
-        }
-        
-        // Rule 3: Default to last result
-        return {
-            prediction: recent[recent.length - 1],
-            strategy: 'FIXED_LENGTH_DEFAULT',
-            confidence: 52
-        };
-    }
-
-    function runTrendFollowStrategy(recent) {
-        // Strategy: Simple trend following
-        const last8 = recent.slice(-8);
-        const bankerCount = last8.filter(r => r === 'B').length;
-        const playerCount = last8.filter(r => r === 'P').length;
-        
-        // Strong trend
-        if (Math.abs(bankerCount - playerCount) >= 3) {
-            return {
-                prediction: bankerCount > playerCount ? 'B' : 'P',
-                strategy: 'TREND_FOLLOW_STRONG',
-                confidence: 60 + Math.abs(bankerCount - playerCount) * 5
-            };
-        }
-        
-        // Weak trend or balanced
-        return {
-            prediction: bankerCount > playerCount ? 'B' : 'P',
-            strategy: 'TREND_FOLLOW_WEAK',
-            confidence: 55
-        };
-    }
-
-    function findHt2OptimalPatterns(sequence) {
-        // HT2-specific pattern finding (different from HT1)
-        const patterns = [];
-        
-        // Pattern 1: 2-1-2 pattern (e.g., BB P BB)
-        if (sequence.length >= 5) {
-            const test = sequence.slice(-5);
-            if (test[0] === test[1] && test[2] !== test[0] && test[3] === test[4] && test[3] === test[0]) {
-                patterns.push({
-                    type: '2-1-2_PATTERN',
-                    prediction: test[0], // Continue the outer pattern
-                    confidence: 75
-                });
-            }
-        }
-        
-        // Pattern 2: Mirror pattern (e.g., PBP BP)
-        if (sequence.length >= 5) {
-            const test = sequence.slice(-5);
-            if (test[0] === test[4] && test[1] === test[3]) {
-                patterns.push({
-                    type: 'MIRROR_PATTERN',
-                    prediction: test[2] === 'P' ? 'B' : 'P', // Bet opposite of middle
-                    confidence: 70
-                });
-            }
-        }
-        
-        // Pattern 3: Triple with break (e.g., BBB P)
-        if (sequence.length >= 4) {
-            const test = sequence.slice(-4);
-            if (test[0] === test[1] && test[1] === test[2] && test[3] !== test[2]) {
-                patterns.push({
-                    type: 'TRIPLE_BREAK',
-                    prediction: test[3], // Follow the break
-                    confidence: 65
-                });
-            }
-        }
-        
-        // Return best pattern by confidence
-        if (patterns.length > 0) {
-            patterns.sort((a, b) => b.confidence - a.confidence);
-            return {
-                bestPattern: patterns[0],
-                allPatterns: patterns
-            };
-        }
-        
-        return { bestPattern: null, allPatterns: [] };
-    }
-
-    // =================== COMMUNICATION FUNCTIONS ===================
-    
     function sendAccuracyUpdate() {
-        const session = ht2State.sessions[ht2State.currentSessionId];
+        const session = state.sessions[state.currentSessionId];
         if (session && session.chotPredictions) {
-            const total = session.stats.totalPredictions;
-            const correct = session.stats.correctPredictions;
+            const total = session.chotPredictions.length;
+            const correct = session.chotPredictions.filter(p => p.predicted === p.actual).length;
             const accuracy = total > 0 ? (correct / total) * 100 : 0;
             
             window.parent.postMessage({
@@ -1950,61 +1563,34 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 type: 'accuracy_update',
                 accuracy: accuracy,
                 correct: correct,
-                total: total,
-                strategy: session.strategy
-            }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht2',
-                type: 'accuracy_update',
-                accuracy: 0,
-                correct: 0,
-                total: 0,
-                strategy: ht2State.strategy
+                total: total
             }, '*');
         }
     }
 
     function sendChotHistory() {
-        const session = ht2State.sessions[ht2State.currentSessionId];
+        const session = state.sessions[state.currentSessionId];
         if (session && session.chotPredictions) {
-            // Only send predictions that have actual results
-            const historyWithResults = session.chotPredictions.filter(p => p.actual !== null);
             window.parent.postMessage({
                 source: 'ht2',
                 type: 'chot_history_update',
-                history: historyWithResults.slice(-50) // Last 50 only
-            }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht2',
-                type: 'chot_history_update',
-                history: []
+                history: session.chotPredictions
             }, '*');
         }
     }
 
     function sendSessionInfo() {
-        const session = ht2State.sessions[ht2State.currentSessionId];
+        const session = state.sessions[state.currentSessionId];
         if (session) {
             window.parent.postMessage({
                 source: 'ht2',
                 type: 'session_update',
                 session: {
-                    id: ht2State.currentSessionId,
+                    id: state.currentSessionId,
                     name: session.name,
                     history: session.history,
-                    current: true,
-                    systemType: 'FIXED_OPTIMIZED',
-                    strategy: session.strategy,
-                    stats: session.stats
+                    current: true
                 }
-            }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht2',
-                type: 'session_update',
-                session: null
             }, '*');
         }
     }
@@ -2013,318 +1599,189 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         window.parent.postMessage({
             source: 'ht2',
             type: 'prediction_update',
-            prediction: ht2State.currentPrediction?.prediction || null,
-            strategy: ht2State.strategy
+            prediction: state.currentChotPredictionForLog?.prediction
         }, '*');
     }
 
-    // =================== OTHER FUNCTIONS ===================
-    
-    function renameHt2Session(sessionData) {
+    function createSession(sessionData) {
+        if (!sessionData || !sessionData.name) return;
+        
+        const newId = `session-${Date.now()}`;
+        state.currentSessionId = newId;
+        state.sessions[newId] = {
+            name: sessionData.name,
+            history: [],
+            predictions: [],
+            verdictPredictions: [],
+            chotPredictions: [],
+            lengthPerformance: {},
+            optimalLength: null,
+            chotLengthPerformance: CHOT_SOURCES.reduce((acc, key) => { acc[key] = {}; return acc; }, {}),
+            chotOptimalLengths: CHOT_SOURCES.reduce((acc, key) => { acc[key] = null; return acc; }, {}),
+        };
+        
+        saveSessions();
+        updateSessionSelector();
+        updateAllUI();
+        
+        sendSessionInfo();
+    }
+
+    function renameSession(sessionData) {
         if (!sessionData || !sessionData.id || !sessionData.name) return;
         
-        if (ht2State.sessions[sessionData.id]) {
-            ht2State.sessions[sessionData.id].name = sessionData.name;
-            saveHt2Sessions();
-            sendSessionInfo();
+        if (state.sessions[sessionData.id]) {
+            state.sessions[sessionData.id].name = sessionData.name;
+            if (state.currentSessionId === sessionData.id) {
+                saveSessions();
+                updateSessionSelector();
+                updateAllUI();
+            }
         }
     }
 
-    function loadHt2Session(sessionData) {
+    function loadSession(sessionData) {
         if (!sessionData || !sessionData.id) return;
         
-        if (!ht2State.sessions[sessionData.id]) {
-            ht2State.sessions[sessionData.id] = {
-                id: sessionData.id,
-                name: sessionData.name || `Phiên HT2 ${sessionData.id}`,
+        // Create session if doesn't exist
+        if (!state.sessions[sessionData.id]) {
+            state.sessions[sessionData.id] = {
+                name: sessionData.name || `Phiên ${sessionData.id}`,
                 history: sessionData.history || [],
+                predictions: [],
+                verdictPredictions: [],
                 chotPredictions: [],
-                systemType: 'FIXED_OPTIMIZED',
-                strategy: ht2State.strategy,
-                stats: {
-                    totalGames: 0,
-                    totalPredictions: 0,
-                    correctPredictions: 0,
-                    strategyPerformance: {}
-                }
+                lengthPerformance: {},
+                optimalLength: null,
+                chotLengthPerformance: CHOT_SOURCES.reduce((acc, key) => { acc[key] = {}; return acc; }, {}),
+                chotOptimalLengths: CHOT_SOURCES.reduce((acc, key) => { acc[key] = null; return acc; }, {}),
             };
         }
         
-        ht2State.currentSessionId = sessionData.id;
-        ht2State.history = sessionData.history || [];
-        ht2State.sessions[sessionData.id].history = ht2State.history;
-        ht2State.sessions[sessionData.id].strategy = ht2State.strategy;
+        // Load the session
+        state.currentSessionId = sessionData.id;
         
-        // Re-analyze history to generate predictions
-        if (ht2State.history.length >= 8) {
-            // Clear existing predictions
-            ht2State.sessions[sessionData.id].chotPredictions = [];
-            ht2State.sessions[sessionData.id].stats.totalPredictions = 0;
-            ht2State.sessions[sessionData.id].stats.correctPredictions = 0;
-            ht2State.sessions[sessionData.id].stats.strategyPerformance = {};
+        // If there's history, simulate it
+        if (sessionData.history && sessionData.history.length > 0) {
+            // Clear existing data
+            state.sessions[sessionData.id].history = [];
+            state.sessions[sessionData.id].predictions = [];
+            state.sessions[sessionData.id].verdictPredictions = [];
+            state.sessions[sessionData.id].chotPredictions = [];
             
-            // Simulate predictions for each result after position 8
-            for (let i = 8; i < ht2State.history.length; i++) {
-                const historySlice = ht2State.history.slice(0, i);
-                const tempState = { 
-                    history: historySlice,
-                    strategy: ht2State.strategy
-                };
-                const analysis = runHt2FixedStrategyAnalysis.call(tempState);
+            // Simulate each result
+            sessionData.history.forEach((result, index) => {
+                state.sessions[sessionData.id].history.push(result);
                 
-                if (analysis) {
-                    const actual = ht2State.history[i];
-                    const isCorrect = analysis.prediction === actual;
-                    
-                    ht2State.sessions[sessionData.id].chotPredictions.push({
-                        predicted: analysis.prediction,
-                        actual: actual,
-                        source: 'HT2_FIXED_STRATEGY',
-                        strategy: analysis.strategy,
-                        confidence: analysis.confidence,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    ht2State.sessions[sessionData.id].stats.totalPredictions++;
-                    if (isCorrect) {
-                        ht2State.sessions[sessionData.id].stats.correctPredictions++;
-                    }
-                    
-                    // Update strategy performance
-                    const strategy = analysis.strategy;
-                    if (!ht2State.sessions[sessionData.id].stats.strategyPerformance[strategy]) {
-                        ht2State.sessions[sessionData.id].stats.strategyPerformance[strategy] = {
-                            total: 0,
-                            correct: 0
-                        };
-                    }
-                    ht2State.sessions[sessionData.id].stats.strategyPerformance[strategy].total++;
-                    if (isCorrect) {
-                        ht2State.sessions[sessionData.id].stats.strategyPerformance[strategy].correct++;
-                    }
+                // Update analysis after each result
+                if (index >= 9) {
+                    updateAnalysisUI();
+                    updateChotAnalysisUI();
                 }
-            }
+            });
             
-            // Generate prediction for next round
-            const currentAnalysis = runHt2FixedStrategyAnalysis();
-            if (currentAnalysis) {
-                ht2State.currentPrediction = currentAnalysis;
-                ht2State.currentChotPredictionForLog = {
-                    predicted: currentAnalysis.prediction,
-                    actual: null,
-                    source: 'HT2_FIXED_STRATEGY',
-                    strategy: currentAnalysis.strategy,
-                    confidence: currentAnalysis.confidence,
-                    timestamp: new Date().toISOString()
-                };
-            }
+            // Recalculate everything
+            updateAllUI();
         }
         
-        saveHt2Sessions();
+        saveSessions();
+        updateSessionSelector();
+        updateAllUI();
         sendSessionInfo();
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
     }
 
-    function undoHt2Last() {
-        if (!ht2State.currentSessionId) return;
+    function addResult(result) {
+        if (!state.currentSessionId) return;
         
-        const session = ht2State.sessions[ht2State.currentSessionId];
-        if (ht2State.history.length === 0) return;
+        // Use existing handleAddResultClick function logic
+        const session = state.sessions[state.currentSessionId];
+        if (!session) return;
         
-        // Remove last result
-        ht2State.history.pop();
-        session.history = ht2State.history;
+        const chotRec = state.currentChotPredictionForLog;
+        const tier1Prediction = state.originalSystemPrediction;
         
-        // Remove last prediction if exists
-        if (session.chotPredictions.length > 0) {
-            const lastPred = session.chotPredictions.pop();
-            if (lastPred && lastPred.actual !== null) {
-                session.stats.totalPredictions--;
-                if (lastPred.predicted === lastPred.actual) {
-                    session.stats.correctPredictions--;
-                }
-                
-                // Update strategy performance
-                const strategy = lastPred.strategy;
-                if (session.stats.strategyPerformance[strategy]) {
-                    session.stats.strategyPerformance[strategy].total--;
-                    if (lastPred.predicted === lastPred.actual) {
-                        session.stats.strategyPerformance[strategy].correct--;
-                    }
-                }
-            }
+        if (state.currentPrediction) {
+            session.predictions.push({ 
+                predicted: state.currentPrediction.prediction, 
+                actual: result, 
+                confidence: state.currentPrediction.confidence 
+            });
         }
         
-        // Recalculate prediction
-        const newAnalysis = runHt2FixedStrategyAnalysis();
-        ht2State.currentPrediction = newAnalysis;
-        if (newAnalysis) {
-            ht2State.currentChotPredictionForLog = {
-                predicted: newAnalysis.prediction,
-                actual: null,
-                source: 'HT2_FIXED_STRATEGY',
-                strategy: newAnalysis.strategy,
-                confidence: newAnalysis.confidence,
-                timestamp: new Date().toISOString()
-            };
+        if (state.currentFinalPrediction) {
+            session.verdictPredictions.push({
+                verdict: state.currentFinalPrediction.verdict,
+                predicted: state.currentFinalPrediction.prediction,
+                actual: result
+            });
         }
         
-        saveHt2Sessions();
+        if (chotRec && chotRec.prediction) {
+            session.chotPredictions.push({ 
+                predicted: chotRec.prediction, 
+                actual: result, 
+                source: 'CHOT_VOTE' 
+            });
+        }
+        
+        updateChotLengthPerformance(session, tier1Prediction, result);
+        session.history.push(result);
+        session.optimalLength = updateLengthPerformanceAndFindOptimal(
+            [...session.history].slice(0, -1), 
+            Object.values(state.sessions), 
+            result
+        );
+        
+        state.currentPrediction = null;
+        state.originalSystemPrediction = null;
+        state.currentFinalPrediction = null;
+        state.currentChotPredictionForLog = null;
+        
+        saveSessions();
+        updateAllUI();
         
         // Send updates
         sendAccuracyUpdate();
         sendChotHistory();
         sendPrediction();
-        sendSessionInfo();
     }
 
-    function clearHt2History() {
-        if (!ht2State.currentSessionId) return;
-        
-        const session = ht2State.sessions[ht2State.currentSessionId];
-        ht2State.history = [];
-        session.history = [];
-        session.chotPredictions = [];
-        session.stats = {
-            totalGames: 0,
-            totalPredictions: 0,
-            correctPredictions: 0,
-            strategyPerformance: {}
-        };
-        ht2State.currentPrediction = null;
-        ht2State.currentChotPredictionForLog = null;
-        
-        saveHt2Sessions();
-        
-        // Send updates
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
-        sendSessionInfo();
-    }
-
-    function importHt2Data(data) {
+    function importSimulatedData(data) {
         if (!data || !data.sessions) return;
         
-        // Clear existing
-        ht2State.sessions = {};
-        ht2State.currentSessionId = null;
-        ht2State.history = [];
+        // Clear existing data
+        state.sessions = {};
+        state.currentSessionId = null;
         
-        // Import sessions
-        Object.keys(data.sessions).forEach(sessionId => {
-            const importedSession = data.sessions[sessionId];
-            
-            ht2State.sessions[sessionId] = {
-                id: sessionId,
-                name: importedSession.name || `Imported HT2 ${sessionId}`,
-                history: importedSession.history || [],
-                chotPredictions: [],
-                systemType: 'FIXED_OPTIMIZED',
-                strategy: importedSession.strategy || ht2State.strategy,
-                stats: {
-                    totalGames: 0,
-                    totalPredictions: 0,
-                    correctPredictions: 0,
-                    strategyPerformance: {}
-                }
-            };
-            
-            // Re-analyze imported history
-            if (importedSession.history && importedSession.history.length >= 8) {
-                for (let i = 8; i < importedSession.history.length; i++) {
-                    const historySlice = importedSession.history.slice(0, i);
-                    const tempState = { 
-                        history: historySlice,
-                        strategy: importedSession.strategy || ht2State.strategy
-                    };
-                    const analysis = runHt2FixedStrategyAnalysis.call(tempState);
-                    
-                    if (analysis) {
-                        const actual = importedSession.history[i];
-                        const isCorrect = analysis.prediction === actual;
-                        
-                        ht2State.sessions[sessionId].chotPredictions.push({
-                            predicted: analysis.prediction,
-                            actual: actual,
-                            source: 'HT2_FIXED_STRATEGY',
-                            strategy: analysis.strategy,
-                            confidence: analysis.confidence
-                        });
-                        
-                        ht2State.sessions[sessionId].stats.totalPredictions++;
-                        if (isCorrect) {
-                            ht2State.sessions[sessionId].stats.correctPredictions++;
-                        }
-                        
-                        // Update strategy performance
-                        const strategy = analysis.strategy;
-                        if (!ht2State.sessions[sessionId].stats.strategyPerformance[strategy]) {
-                            ht2State.sessions[sessionId].stats.strategyPerformance[strategy] = {
-                                total: 0,
-                                correct: 0
-                            };
-                        }
-                        ht2State.sessions[sessionId].stats.strategyPerformance[strategy].total++;
-                        if (isCorrect) {
-                            ht2State.sessions[sessionId].stats.strategyPerformance[strategy].correct++;
-                        }
-                    }
-                }
+        showLoadingModal('Đang nhập dữ liệu mô phỏng...');
+        
+        setTimeout(() => {
+            try {
+                runSimulation(data.sessions);
+                hideLoadingModal();
+                
+                // Send updates
+                sendAccuracyUpdate();
+                sendChotHistory();
+                sendSessionInfo();
+                
+                window.parent.postMessage({
+                    source: 'ht2',
+                    type: 'import_complete'
+                }, '*');
+            } catch (error) {
+                hideLoadingModal();
+                console.error('Import simulation error:', error);
             }
-            
-            ht2State.sessions[sessionId].stats.totalGames = importedSession.history.length;
-        });
-        
-        // Set first session as current
-        const sessionIds = Object.keys(ht2State.sessions);
-        if (sessionIds.length > 0) {
-            ht2State.currentSessionId = sessionIds[0];
-            ht2State.history = ht2State.sessions[sessionIds[0]].history;
-            ht2State.strategy = ht2State.sessions[sessionIds[0]].strategy;
-            
-            // Generate current prediction
-            if (ht2State.history.length >= 8) {
-                const currentAnalysis = runHt2FixedStrategyAnalysis();
-                if (currentAnalysis) {
-                    ht2State.currentPrediction = currentAnalysis;
-                    ht2State.currentChotPredictionForLog = {
-                        predicted: currentAnalysis.prediction,
-                        actual: null,
-                        source: 'HT2_FIXED_STRATEGY',
-                        strategy: currentAnalysis.strategy,
-                        confidence: currentAnalysis.confidence
-                    };
-                }
-            }
-        }
-        
-        saveHt2Sessions();
-        
-        // Send updates
-        sendSessionInfo();
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
-        
-        window.parent.postMessage({
-            source: 'ht2',
-            type: 'import_complete'
-        }, '*');
+        }, 100);
     }
 
-    function exportHt2Data() {
+    function exportSessionData() {
         const sessionsToExport = {};
-        
-        for (const sessionId in ht2State.sessions) {
+        for (const sessionId in state.sessions) {
             sessionsToExport[sessionId] = {
-                name: ht2State.sessions[sessionId].name,
-                history: ht2State.sessions[sessionId].history,
-                systemType: 'FIXED_OPTIMIZED',
-                strategy: ht2State.sessions[sessionId].strategy,
-                stats: ht2State.sessions[sessionId].stats
+                name: state.sessions[sessionId].name,
+                history: state.sessions[sessionId].history
             };
         }
         
@@ -2335,49 +1792,20 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         }, '*');
     }
 
-    function resetHt2System() {
-        ht2State.sessions = {};
-        ht2State.currentSessionId = null;
-        ht2State.history = [];
-        ht2State.currentPrediction = null;
-        ht2State.currentChotPredictionForLog = null;
-        ht2State.strategy = 'DYNAMIC_OPTIMAL';
+    function resetSystem() {
+        state.sessions = {};
+        state.currentSessionId = null;
+        state.currentPrediction = null;
+        state.originalSystemPrediction = null;
+        state.currentFinalPrediction = null;
+        state.currentChotPredictionForLog = null;
         
-        localStorage.removeItem(STORAGE_KEY_SESSIONS);
-        localStorage.removeItem(STORAGE_KEY_LAST);
+        localStorage.removeItem('baccaratPatternSessions_v11_sim');
+        localStorage.removeItem('lastActiveSession_v11_sim');
         
-        // Create new default session
-        createHt2Session({ name: 'Phiên HT2 mới' });
-        
-        window.parent.postMessage({
-            source: 'ht2',
-            type: 'system_reset'
-        }, '*');
+        createNewSession();
+        updateAllUI();
     }
-
-    function updateHt2Analysis() {
-        // Generate new prediction based on current history
-        if (ht2State.history.length >= 8) {
-            const analysis = runHt2FixedStrategyAnalysis();
-            ht2State.currentPrediction = analysis;
-            
-            if (analysis) {
-                ht2State.currentChotPredictionForLog = {
-                    predicted: analysis.prediction,
-                    actual: null,
-                    source: 'HT2_FIXED_STRATEGY',
-                    strategy: analysis.strategy,
-                    confidence: analysis.confidence,
-                    timestamp: new Date().toISOString()
-                };
-                
-                sendPrediction();
-            }
-        }
-    }
-
-    // Initialize console log
-    console.log('HT2 Fixed & Optimized Adapter loaded successfully');
 })();
 </script>
 </body>
