@@ -322,12 +322,11 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center text-gray-500 text-sm">
-            <p>Hệ thống "VẠN SỰ NHƯ Ý" - Tổng hợp từ HT1 & HT2 | Phiên bản 2.0 (Fixed)</p>
-            <p class="mt-2">Lưu ý: HT1 và HT2 hoạt động độc lập với thuật toán và bộ nhớ riêng biệt</p>
+            <p>Hệ thống "VẠN SỰ NHƯ Ý" - Tổng hợp từ HT1 & HT2 | Phiên bản 1.0</p>
+            <p class="mt-2">Lưu ý: Các hệ thống chạy độc lập nhưng đồng bộ về dữ liệu và phiên làm việc</p>
         </div>
     </div>
 
-    <!-- Master System Script -->
     <script>
         // =================== GLOBAL STATE ===================
         const masterState = {
@@ -342,10 +341,6 @@
             systemsReady: {
                 ht1: false,
                 ht2: false
-            },
-            predictions: {
-                ht1: null,
-                ht2: null
             }
         };
 
@@ -402,25 +397,10 @@
                     
                 case 'prediction_update':
                     // Store prediction for final decision
-                    masterState.predictions[system] = data.prediction;
-                    calculateFinalDecision();
-                    break;
-                    
-                case 'export_data':
-                    // Handle export data from system
-                    if (data.sessions) {
-                        // Store for master export
-                        if (!masterState.systemSessions) masterState.systemSessions = {};
-                        masterState.systemSessions[system] = data.sessions;
+                    if (data.prediction) {
+                        masterState[`${system}Prediction`] = data.prediction;
+                        calculateFinalDecision();
                     }
-                    break;
-                    
-                case 'import_complete':
-                    showToast(`${system.toUpperCase()}: Đã nhập dữ liệu thành công!`, 'success');
-                    break;
-                    
-                case 'system_reset':
-                    showToast(`${system.toUpperCase()}: Đã reset hệ thống`, 'info');
                     break;
             }
         }
@@ -492,26 +472,15 @@
                 broadcastToAll('get_accuracy');
                 broadcastToAll('get_session_info');
                 broadcastToAll('get_chot_history');
-                broadcastToAll('get_prediction');
             }, 1000);
-            
-            showToast('Tất cả hệ thống đã sẵn sàng!', 'success');
         }
 
         function loadMasterSessions() {
             try {
-                const saved = localStorage.getItem('vanSuNhuY_sessions_v2');
+                const saved = localStorage.getItem('vanSuNhuY_sessions');
                 if (saved) {
                     masterState.sessions = JSON.parse(saved);
                     updateMasterSessionSelector();
-                    
-                    // Load last active session
-                    const lastActive = localStorage.getItem('vanSuNhuY_lastSession_v2');
-                    if (lastActive && masterState.sessions[lastActive]) {
-                        masterState.currentSessionId = lastActive;
-                        masterState.currentSessionName = masterState.sessions[lastActive].name;
-                        updateCurrentSessionInfo();
-                    }
                 }
             } catch (e) {
                 console.error('Error loading master sessions:', e);
@@ -519,10 +488,7 @@
         }
 
         function saveMasterSessions() {
-            localStorage.setItem('vanSuNhuY_sessions_v2', JSON.stringify(masterState.sessions));
-            if (masterState.currentSessionId) {
-                localStorage.setItem('vanSuNhuY_lastSession_v2', masterState.currentSessionId);
-            }
+            localStorage.setItem('vanSuNhuY_sessions', JSON.stringify(masterState.sessions));
         }
 
         function updateMasterSessionSelector() {
@@ -533,9 +499,6 @@
                 const option = document.createElement('option');
                 option.value = sessionId;
                 option.textContent = masterState.sessions[sessionId].name;
-                if (sessionId === masterState.currentSessionId) {
-                    option.selected = true;
-                }
                 selector.appendChild(option);
             });
         }
@@ -543,7 +506,7 @@
         function createNewSessionAll() {
             const sessionName = prompt('Nhập tên phiên mới:', `Phiên ${new Date().toLocaleString('vi-VN')}`);
             if (sessionName) {
-                const sessionId = `master-session-${Date.now()}`;
+                const sessionId = `session-${Date.now()}`;
                 
                 masterState.sessions[sessionId] = {
                     id: sessionId,
@@ -559,15 +522,10 @@
                 updateMasterSessionSelector();
                 updateCurrentSessionInfo();
                 
-                // Send to all systems with DIFFERENT session IDs
-                sendToIframe('ht1-iframe', 'create_session', {
-                    name: `${sessionName} (HT1)`,
-                    id: `ht1-${sessionId}`
-                });
-                
-                sendToIframe('ht2-iframe', 'create_session', {
-                    name: `${sessionName} (HT2)`,
-                    id: `ht2-${sessionId}`
+                // Send to all systems
+                broadcastToAll('create_session', {
+                    name: sessionName,
+                    id: sessionId
                 });
                 
                 showToast(`Đã tạo phiên mới: ${sessionName}`, 'success');
@@ -605,8 +563,6 @@
             const session = masterState.sessions[masterState.currentSessionId];
             if (session && session.history) {
                 document.getElementById('totalGamesMaster').textContent = session.history.length;
-            } else {
-                document.getElementById('totalGamesMaster').textContent = '0';
             }
         }
 
@@ -628,22 +584,28 @@
                             updateMasterSessionSelector();
                         }
                         
-                        // Send import command to systems
-                        if (data.system_sessions && data.system_sessions.ht1) {
+                        // Send import command to all systems
+                        broadcastToAll('import_data', {
+                            sessions: data.system_sessions?.ht1 || [],
+                            simulate: true
+                        });
+                        
+                        // We need to send to both systems separately
+                        setTimeout(() => {
                             sendToIframe('ht1-iframe', 'import_data', {
-                                sessions: data.system_sessions.ht1
+                                sessions: data.system_sessions?.ht1 || [],
+                                simulate: true
                             });
-                        }
-                        
-                        if (data.system_sessions && data.system_sessions.ht2) {
+                            
                             sendToIframe('ht2-iframe', 'import_data', {
-                                sessions: data.system_sessions.ht2
+                                sessions: data.system_sessions?.ht2 || [],
+                                simulate: true
                             });
-                        }
+                        }, 100);
                         
-                        showToast('Đã nhập dữ liệu tổng hợp thành công!', 'success');
+                        showToast('Đã nhập dữ liệu thành công!', 'success');
                     } else {
-                        // Legacy import - send to all systems
+                        // Legacy import - just send to all systems
                         broadcastToAll('import_data', {
                             sessions: data,
                             simulate: true
@@ -660,19 +622,22 @@
         }
 
         function exportMasterData() {
-            // First, request data from all systems
+            // Collect data from all systems
+            const exportData = {
+                type: 'vanSuNhuY_export',
+                timestamp: new Date().toISOString(),
+                sessions: masterState.sessions,
+                system_sessions: {
+                    ht1: [],
+                    ht2: []
+                }
+            };
+            
+            // Request session data from systems
             broadcastToAll('export_data');
             
-            // Wait a bit for systems to respond, then create export
+            // We'll send the data anyway, systems will respond via postMessage
             setTimeout(() => {
-                const exportData = {
-                    type: 'vanSuNhuY_export',
-                    version: '2.0',
-                    timestamp: new Date().toISOString(),
-                    master_sessions: masterState.sessions,
-                    system_sessions: masterState.systemSessions || {}
-                };
-                
                 const dataStr = JSON.stringify(exportData, null, 2);
                 const dataBlob = new Blob([dataStr], {type: 'application/json'});
                 const url = URL.createObjectURL(dataBlob);
@@ -799,8 +764,7 @@
                 masterState.ht1Accuracy = 0;
                 masterState.ht2Accuracy = 0;
                 
-                localStorage.removeItem('vanSuNhuY_sessions_v2');
-                localStorage.removeItem('vanSuNhuY_lastSession_v2');
+                localStorage.removeItem('vanSuNhuY_sessions');
                 updateMasterSessionSelector();
                 updateCurrentSessionInfo();
                 
@@ -867,8 +831,8 @@
         }
 
         function calculateFinalDecision() {
-            const ht1Acc = masterState.ht1Accuracy || 0;
-            const ht2Acc = masterState.ht2Accuracy || 0;
+            const ht1Acc = masterState.ht1Accuracy;
+            const ht2Acc = masterState.ht2Accuracy;
             
             let decision = null;
             let reason = '';
@@ -876,28 +840,28 @@
             
             // Priority 1: Systems with accuracy >= 70%
             const highAccuracySystems = [];
-            if (ht1Acc >= 70) highAccuracySystems.push({name: 'HT1', acc: ht1Acc, prediction: masterState.predictions.ht1});
-            if (ht2Acc >= 70) highAccuracySystems.push({name: 'HT2', acc: ht2Acc, prediction: masterState.predictions.ht2});
+            if (ht1Acc >= 70) highAccuracySystems.push({name: 'HT1', acc: ht1Acc});
+            if (ht2Acc >= 70) highAccuracySystems.push({name: 'HT2', acc: ht2Acc});
             
             if (highAccuracySystems.length === 1) {
                 // Only one system with high accuracy
                 prioritySystem = highAccuracySystems[0].name;
-                decision = highAccuracySystems[0].prediction;
+                decision = masterState[`${prioritySystem.toLowerCase()}Prediction`];
                 reason = `Ưu tiên ${prioritySystem} (độ chính xác Chốt: ${highAccuracySystems[0].acc.toFixed(1)}% ≥ 70%)`;
             } 
             else if (highAccuracySystems.length > 1) {
                 // Multiple systems with high accuracy - choose the highest
                 highAccuracySystems.sort((a, b) => b.acc - a.acc);
                 prioritySystem = highAccuracySystems[0].name;
-                decision = highAccuracySystems[0].prediction;
+                decision = masterState[`${prioritySystem.toLowerCase()}Prediction`];
                 reason = `${prioritySystem} có độ chính xác cao nhất (${highAccuracySystems[0].acc.toFixed(1)}%) trong các hệ thống ≥ 70%`;
             }
             else {
                 // No system with high accuracy, use majority vote
                 prioritySystem = 'ĐA SỐ';
                 const predictions = [];
-                if (masterState.predictions.ht1) predictions.push(masterState.predictions.ht1);
-                if (masterState.predictions.ht2) predictions.push(masterState.predictions.ht2);
+                if (masterState.ht1prediction) predictions.push(masterState.ht1prediction);
+                if (masterState.ht2prediction) predictions.push(masterState.ht2prediction);
                 
                 if (predictions.length > 0) {
                     const pCount = predictions.filter(p => p === 'P').length;
@@ -1008,6 +972,14 @@
             updateCurrentSessionInfo();
             updateSystemStatus();
             
+            // Set up periodic updates
+            setInterval(() => {
+                if (allSystemsReady()) {
+                    broadcastToAll('get_accuracy');
+                    broadcastToAll('get_chot_history');
+                }
+            }, 5000);
+            
             // Set up session selector change handler
             document.getElementById('masterSessionSelector').addEventListener('change', function(e) {
                 if (e.target.value) {
@@ -1025,20 +997,8 @@
                 }
             });
             
-            // Set up periodic updates
-            setInterval(() => {
-                if (allSystemsReady()) {
-                    broadcastToAll('get_accuracy');
-                    broadcastToAll('get_chot_history');
-                }
-            }, 5000);
-            
-            showToast('Hệ thống VẠN SỰ NHƯ Ý đã khởi động!', 'success');
+            showToast('Hệ thống VẠN SỰ NHƯ Ý đã sẵn sàng!', 'success');
         });
     </script>
-    
-    <!-- Load adapters for HT1 and HT2 -->
-    <script src="ht1-adapter.js"></script>
-    <script src="ht2-adapter.js"></script>
 </body>
 </html>
