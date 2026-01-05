@@ -1916,87 +1916,26 @@ function initializeApp() {
 document.addEventListener('DOMContentLoaded', initializeApp)
 </script>
 <script>
-    // =================== IFRAME COMMUNICATION ADAPTER - HT1 ONLY ===================
-// File: ht1-adapter.js
-
+// =================== IFRAME COMMUNICATION FOR HT1 ===================
 (function() {
-    // ĐỊNH DANH RIÊNG CHO HT1
-    const SYSTEM_ID = 'ht1';
-    const STORAGE_KEY_SESSIONS = 'HT1_PatternMatching_Sessions_v2';
-    const STORAGE_KEY_LAST = 'HT1_LastActiveSession_v2';
-    
-    // Biến trạng thái riêng cho HT1
-    const ht1State = {
-        sessions: {},
-        currentSessionId: null,
-        currentPrediction: null,
-        currentChotPredictionForLog: null,
-        history: []
-    };
-
-    // Notify parent that HT1 is ready
+    // Notify parent that system is ready
     window.addEventListener('load', function() {
-        console.log('HT1 Adapter: Pattern Matching System Initialized');
-        
         setTimeout(() => {
             window.parent.postMessage({
                 source: 'ht1',
                 type: 'ready'
             }, '*');
-            
-            // Load HT1 sessions
-            loadHt1Sessions();
-        }, 1500);
+        }, 1000);
     });
 
-    // Listen for messages from parent (Master System)
+    // Listen for messages from parent
     window.addEventListener('message', function(event) {
         if (event.data.source === 'master') {
             handleMasterCommand(event.data);
         }
     });
 
-    function loadHt1Sessions() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY_SESSIONS);
-            const lastActive = localStorage.getItem(STORAGE_KEY_LAST);
-            
-            if (saved) {
-                ht1State.sessions = JSON.parse(saved);
-                ht1State.currentSessionId = lastActive;
-                
-                // If there's a current session, restore analysis
-                if (ht1State.currentSessionId && ht1State.sessions[ht1State.currentSessionId]) {
-                    const session = ht1State.sessions[ht1State.currentSessionId];
-                    ht1State.history = session.history || [];
-                    
-                    // Trigger analysis update
-                    if (ht1State.history.length >= 10) {
-                        updateHt1Analysis();
-                    }
-                }
-            } else {
-                // Create default session if none exists
-                createHt1Session({ name: 'Phiên HT1 mặc định' });
-            }
-        } catch (e) {
-            console.error('HT1: Error loading sessions:', e);
-            createHt1Session({ name: 'Phiên HT1 mặc định' });
-        }
-        
-        sendSessionInfo();
-    }
-
-    function saveHt1Sessions() {
-        localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(ht1State.sessions));
-        if (ht1State.currentSessionId) {
-            localStorage.setItem(STORAGE_KEY_LAST, ht1State.currentSessionId);
-        }
-    }
-
     function handleMasterCommand(data) {
-        console.log('HT1 received command:', data.command);
-        
         switch(data.command) {
             case 'get_accuracy':
                 sendAccuracyUpdate();
@@ -2015,235 +1954,48 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 break;
                 
             case 'create_session':
-                createHt1Session(data.data);
+                createSession(data.data);
                 break;
                 
             case 'rename_session':
-                renameHt1Session(data.data);
+                renameSession(data.data);
                 break;
                 
             case 'load_session':
-                loadHt1Session(data.data);
+                loadSession(data.data);
                 break;
                 
             case 'add_result':
-                addHt1Result(data.data);
+                addResult(data.data);
                 break;
                 
             case 'undo_last':
-                undoHt1Last();
+                undoLast();
                 break;
                 
             case 'clear_history':
-                clearHt1History();
+                clearCurrentSessionHistory();
                 break;
                 
             case 'import_data':
-                importHt1Data(data.data);
+                importSimulatedData(data.data);
                 break;
                 
             case 'export_data':
-                exportHt1Data();
+                exportSessionData();
                 break;
                 
             case 'reset_system':
-                resetHt1System();
+                resetSystem();
                 break;
         }
     }
 
-    // =================== HT1 SPECIFIC FUNCTIONS ===================
-    
-    function createHt1Session(sessionData) {
-        if (!sessionData || !sessionData.name) return;
-        
-        const newId = sessionData.id || `ht1-session-${Date.now()}`;
-        ht1State.currentSessionId = newId;
-        ht1State.sessions[newId] = {
-            id: newId,
-            name: sessionData.name,
-            history: [],
-            chotPredictions: [],
-            created: new Date().toISOString(),
-            systemType: 'PATTERN_MATCHING',
-            stats: {
-                totalGames: 0,
-                totalPredictions: 0,
-                correctPredictions: 0
-            }
-        };
-        
-        ht1State.history = [];
-        ht1State.currentPrediction = null;
-        ht1State.currentChotPredictionForLog = null;
-        
-        saveHt1Sessions();
-        sendSessionInfo();
-        
-        console.log('HT1: Created new session:', sessionData.name);
-    }
-
-    function addHt1Result(result) {
-        if (!ht1State.currentSessionId) {
-            // Create default session if none exists
-            createHt1Session({ name: 'Phiên HT1 mặc định' });
-        }
-        
-        const session = ht1State.sessions[ht1State.currentSessionId];
-        if (!session) return;
-        
-        // Add to history
-        ht1State.history.push(result);
-        session.history = ht1State.history;
-        session.stats.totalGames = ht1State.history.length;
-        
-        // Run HT1-specific pattern matching analysis
-        const analysisResult = runHt1PatternAnalysis();
-        
-        if (analysisResult) {
-            ht1State.currentPrediction = analysisResult;
-            
-            // Log prediction for accuracy tracking
-            if (session.history.length > 10) { // Only track after we have enough history
-                const lastPrediction = session.chotPredictions[session.chotPredictions.length - 1];
-                if (lastPrediction) {
-                    lastPrediction.actual = result;
-                    
-                    // Update stats
-                    session.stats.totalPredictions++;
-                    if (lastPrediction.predicted === result) {
-                        session.stats.correctPredictions++;
-                    }
-                }
-            }
-            
-            // Create new prediction for next round
-            ht1State.currentChotPredictionForLog = {
-                predicted: analysisResult.prediction,
-                actual: null, // Will be filled when next result comes
-                source: 'HT1_PATTERN_MATCHING',
-                confidence: analysisResult.confidence,
-                pattern: analysisResult.patternType,
-                timestamp: new Date().toISOString()
-            };
-            
-            session.chotPredictions.push(ht1State.currentChotPredictionForLog);
-        }
-        
-        saveHt1Sessions();
-        
-        // Send updates to parent
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
-        
-        console.log('HT1: Added result:', result, 'Prediction:', ht1State.currentPrediction);
-    }
-
-    function runHt1PatternAnalysis() {
-        // Đây là nơi triển khai LOGIC RIÊNG của HT1 - Pattern Matching
-        // Logic này KHÁC với HT2
-        
-        if (ht1State.history.length < 10) {
-            return null;
-        }
-        
-        const recent = ht1State.history.slice(-10);
-        
-        // Pattern 1: Check for repeating patterns (AAA)
-        if (isRepeatingPattern(recent)) {
-            const last = recent[recent.length - 1];
-            return {
-                prediction: last, // Continue the pattern
-                confidence: 75,
-                patternType: 'REPEATING_PATTERN'
-            };
-        }
-        
-        // Pattern 2: Check for alternating patterns (ABAB)
-        if (isAlternatingPattern(recent)) {
-            const last = recent[recent.length - 1];
-            return {
-                prediction: last === 'P' ? 'B' : 'P', // Reverse the pattern
-                confidence: 70,
-                patternType: 'ALTERNATING_PATTERN'
-            };
-        }
-        
-        // Pattern 3: Check for banker streaks
-        const bankerCount = recent.filter(r => r === 'B').length;
-        const playerCount = recent.filter(r => r === 'P').length;
-        
-        if (bankerCount >= 7) {
-            return {
-                prediction: 'B', // Strong banker trend
-                confidence: 80,
-                patternType: 'BANKER_STREAK'
-            };
-        }
-        
-        if (playerCount >= 7) {
-            return {
-                prediction: 'P', // Strong player trend
-                confidence: 80,
-                patternType: 'PLAYER_STREAK'
-            };
-        }
-        
-        // Pattern 4: Recent bias (last 3 results)
-        const lastThree = recent.slice(-3);
-        const lastThreeBanker = lastThree.filter(r => r === 'B').length;
-        const lastThreePlayer = lastThree.filter(r => r === 'P').length;
-        
-        if (lastThreeBanker === 3) {
-            return {
-                prediction: 'B',
-                confidence: 65,
-                patternType: 'LAST_3_BANKER'
-            };
-        }
-        
-        if (lastThreePlayer === 3) {
-            return {
-                prediction: 'P',
-                confidence: 65,
-                patternType: 'LAST_3_PLAYER'
-            };
-        }
-        
-        // Default: Follow the majority in recent 10
-        return {
-            prediction: bankerCount > playerCount ? 'B' : 'P',
-            confidence: 55 + Math.abs(bankerCount - playerCount) * 2,
-            patternType: 'MAJORITY_VOTE'
-        };
-    }
-
-    function isRepeatingPattern(sequence) {
-        if (sequence.length < 4) return false;
-        const lastFour = sequence.slice(-4);
-        return lastFour[0] === lastFour[1] && 
-               lastFour[1] === lastFour[2] && 
-               lastFour[2] === lastFour[3];
-    }
-
-    function isAlternatingPattern(sequence) {
-        if (sequence.length < 4) return false;
-        const lastFour = sequence.slice(-4);
-        return lastFour[0] !== lastFour[1] && 
-               lastFour[1] !== lastFour[2] && 
-               lastFour[2] !== lastFour[3] &&
-               lastFour[0] === lastFour[2] &&
-               lastFour[1] === lastFour[3];
-    }
-
-    // =================== COMMUNICATION FUNCTIONS ===================
-    
     function sendAccuracyUpdate() {
-        const session = ht1State.sessions[ht1State.currentSessionId];
+        const session = state.sessions[state.currentSessionId];
         if (session && session.chotPredictions) {
-            const total = session.stats.totalPredictions;
-            const correct = session.stats.correctPredictions;
+            const total = session.chotPredictions.length;
+            const correct = session.chotPredictions.filter(p => p.predicted === p.actual).length;
             const accuracy = total > 0 ? (correct / total) * 100 : 0;
             
             window.parent.postMessage({
@@ -2253,56 +2005,32 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 correct: correct,
                 total: total
             }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht1',
-                type: 'accuracy_update',
-                accuracy: 0,
-                correct: 0,
-                total: 0
-            }, '*');
         }
     }
 
     function sendChotHistory() {
-        const session = ht1State.sessions[ht1State.currentSessionId];
+        const session = state.sessions[state.currentSessionId];
         if (session && session.chotPredictions) {
-            // Only send predictions that have actual results
-            const historyWithResults = session.chotPredictions.filter(p => p.actual !== null);
             window.parent.postMessage({
                 source: 'ht1',
                 type: 'chot_history_update',
-                history: historyWithResults.slice(-50) // Last 50 only
-            }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht1',
-                type: 'chot_history_update',
-                history: []
+                history: session.chotPredictions
             }, '*');
         }
     }
 
     function sendSessionInfo() {
-        const session = ht1State.sessions[ht1State.currentSessionId];
+        const session = state.sessions[state.currentSessionId];
         if (session) {
             window.parent.postMessage({
                 source: 'ht1',
                 type: 'session_update',
                 session: {
-                    id: ht1State.currentSessionId,
+                    id: state.currentSessionId,
                     name: session.name,
                     history: session.history,
-                    current: true,
-                    systemType: 'PATTERN_MATCHING',
-                    stats: session.stats
+                    current: true
                 }
-            }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht1',
-                type: 'session_update',
-                session: null
             }, '*');
         }
     }
@@ -2311,267 +2039,192 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         window.parent.postMessage({
             source: 'ht1',
             type: 'prediction_update',
-            prediction: ht1State.currentPrediction?.prediction || null
+            prediction: state.currentChotPredictionForLog?.prediction
         }, '*');
     }
 
-    // =================== OTHER FUNCTIONS ===================
-    
-    function renameHt1Session(sessionData) {
+    function createSession(sessionData) {
+        if (!sessionData || !sessionData.name) return;
+        
+        const newId = `session-${Date.now()}`;
+        state.currentSessionId = newId;
+        state.sessions[newId] = {
+            name: sessionData.name,
+            history: [],
+            predictions: [],
+            verdictPredictions: [],
+            chotPredictions: [],
+            lengthPerformance: {},
+            optimalLength: null,
+            chotLengthPerformance: CHOT_SOURCES.reduce((acc, key) => { acc[key] = {}; return acc; }, {}),
+            chotOptimalLengths: CHOT_SOURCES.reduce((acc, key) => { acc[key] = null; return acc; }, {}),
+        };
+        
+        saveSessions();
+        updateSessionSelector();
+        updateAllUI();
+        
+        sendSessionInfo();
+    }
+
+    function renameSession(sessionData) {
         if (!sessionData || !sessionData.id || !sessionData.name) return;
         
-        if (ht1State.sessions[sessionData.id]) {
-            ht1State.sessions[sessionData.id].name = sessionData.name;
-            saveHt1Sessions();
-            sendSessionInfo();
+        if (state.sessions[sessionData.id]) {
+            state.sessions[sessionData.id].name = sessionData.name;
+            if (state.currentSessionId === sessionData.id) {
+                saveSessions();
+                updateSessionSelector();
+                updateAllUI();
+            }
         }
     }
 
-    function loadHt1Session(sessionData) {
+    function loadSession(sessionData) {
         if (!sessionData || !sessionData.id) return;
         
-        if (!ht1State.sessions[sessionData.id]) {
-            ht1State.sessions[sessionData.id] = {
-                id: sessionData.id,
-                name: sessionData.name || `Phiên HT1 ${sessionData.id}`,
+        // Create session if doesn't exist
+        if (!state.sessions[sessionData.id]) {
+            state.sessions[sessionData.id] = {
+                name: sessionData.name || `Phiên ${sessionData.id}`,
                 history: sessionData.history || [],
+                predictions: [],
+                verdictPredictions: [],
                 chotPredictions: [],
-                systemType: 'PATTERN_MATCHING',
-                stats: {
-                    totalGames: 0,
-                    totalPredictions: 0,
-                    correctPredictions: 0
-                }
+                lengthPerformance: {},
+                optimalLength: null,
+                chotLengthPerformance: CHOT_SOURCES.reduce((acc, key) => { acc[key] = {}; return acc; }, {}),
+                chotOptimalLengths: CHOT_SOURCES.reduce((acc, key) => { acc[key] = null; return acc; }, {}),
             };
         }
         
-        ht1State.currentSessionId = sessionData.id;
-        ht1State.history = sessionData.history || [];
-        ht1State.sessions[sessionData.id].history = ht1State.history;
+        // Load the session
+        state.currentSessionId = sessionData.id;
         
-        // Re-analyze history to generate predictions
-        if (ht1State.history.length >= 10) {
-            // Clear existing predictions
-            ht1State.sessions[sessionData.id].chotPredictions = [];
-            ht1State.sessions[sessionData.id].stats.totalPredictions = 0;
-            ht1State.sessions[sessionData.id].stats.correctPredictions = 0;
+        // If there's history, simulate it
+        if (sessionData.history && sessionData.history.length > 0) {
+            // Clear existing data
+            state.sessions[sessionData.id].history = [];
+            state.sessions[sessionData.id].predictions = [];
+            state.sessions[sessionData.id].verdictPredictions = [];
+            state.sessions[sessionData.id].chotPredictions = [];
             
-            // Simulate predictions for each result after position 10
-            for (let i = 10; i < ht1State.history.length; i++) {
-                const historySlice = ht1State.history.slice(0, i);
-                const tempState = { history: historySlice };
-                const analysis = runHt1PatternAnalysis.call(tempState);
+            // Simulate each result
+            sessionData.history.forEach((result, index) => {
+                // We need to simulate the analysis step by step
+                // For simplicity, we'll just add the results and let the system recalc
+                state.sessions[sessionData.id].history.push(result);
                 
-                if (analysis) {
-                    const actual = ht1State.history[i];
-                    const isCorrect = analysis.prediction === actual;
-                    
-                    ht1State.sessions[sessionData.id].chotPredictions.push({
-                        predicted: analysis.prediction,
-                        actual: actual,
-                        source: 'HT1_PATTERN_MATCHING',
-                        confidence: analysis.confidence,
-                        pattern: analysis.patternType,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    ht1State.sessions[sessionData.id].stats.totalPredictions++;
-                    if (isCorrect) {
-                        ht1State.sessions[sessionData.id].stats.correctPredictions++;
-                    }
+                // Update analysis after each result
+                if (index >= 9) { // Minimum history for analysis
+                    updateAnalysisUI();
+                    updateChotAnalysisUI();
                 }
-            }
+            });
             
-            // Generate prediction for next round
-            const currentAnalysis = runHt1PatternAnalysis();
-            if (currentAnalysis) {
-                ht1State.currentPrediction = currentAnalysis;
-                ht1State.currentChotPredictionForLog = {
-                    predicted: currentAnalysis.prediction,
-                    actual: null,
-                    source: 'HT1_PATTERN_MATCHING',
-                    confidence: currentAnalysis.confidence,
-                    pattern: currentAnalysis.patternType,
-                    timestamp: new Date().toISOString()
-                };
-            }
+            // Recalculate everything
+            updateAllUI();
         }
         
-        saveHt1Sessions();
+        saveSessions();
+        updateSessionSelector();
+        updateAllUI();
         sendSessionInfo();
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
     }
 
-    function undoHt1Last() {
-        if (!ht1State.currentSessionId) return;
+    function addResult(result) {
+        if (!state.currentSessionId) return;
         
-        const session = ht1State.sessions[ht1State.currentSessionId];
-        if (ht1State.history.length === 0) return;
+        // Use existing addResult function
+        const session = state.sessions[state.currentSessionId];
+        if (!session) return;
         
-        // Remove last result
-        ht1State.history.pop();
-        session.history = ht1State.history;
+        // Call the existing addResult function
+        const chotRec = state.currentChotPredictionForLog;
+        const tier1Prediction = state.originalSystemPrediction;
         
-        // Remove last prediction if exists
-        if (session.chotPredictions.length > 0) {
-            const lastPred = session.chotPredictions.pop();
-            if (lastPred && lastPred.actual !== null) {
-                session.stats.totalPredictions--;
-                if (lastPred.predicted === lastPred.actual) {
-                    session.stats.correctPredictions--;
-                }
-            }
+        if (state.currentPrediction) {
+            session.predictions.push({ 
+                predicted: state.currentPrediction.prediction, 
+                actual: result, 
+                confidence: state.currentPrediction.confidence 
+            });
         }
         
-        // Recalculate prediction
-        const newAnalysis = runHt1PatternAnalysis();
-        ht1State.currentPrediction = newAnalysis;
-        if (newAnalysis) {
-            ht1State.currentChotPredictionForLog = {
-                predicted: newAnalysis.prediction,
-                actual: null,
-                source: 'HT1_PATTERN_MATCHING',
-                confidence: newAnalysis.confidence,
-                pattern: newAnalysis.patternType,
-                timestamp: new Date().toISOString()
-            };
+        if (state.currentFinalPrediction) {
+            session.verdictPredictions.push({
+                verdict: state.currentFinalPrediction.verdict,
+                predicted: state.currentFinalPrediction.prediction,
+                actual: result
+            });
         }
         
-        saveHt1Sessions();
+        if (chotRec && chotRec.prediction) {
+            session.chotPredictions.push({ 
+                predicted: chotRec.prediction, 
+                actual: result, 
+                source: 'CHOT_VOTE' 
+            });
+        }
+        
+        updateChotLengthPerformance(session, tier1Prediction, result);
+        session.history.push(result);
+        session.optimalLength = updateLengthPerformanceAndFindOptimal(
+            [...session.history].slice(0, -1), 
+            Object.values(state.sessions), 
+            result
+        );
+        
+        state.currentPrediction = null;
+        state.originalSystemPrediction = null;
+        state.currentFinalPrediction = null;
+        state.currentChotPredictionForLog = null;
+        
+        saveSessions();
+        updateAllUI();
         
         // Send updates
         sendAccuracyUpdate();
         sendChotHistory();
         sendPrediction();
-        sendSessionInfo();
     }
 
-    function clearHt1History() {
-        if (!ht1State.currentSessionId) return;
-        
-        const session = ht1State.sessions[ht1State.currentSessionId];
-        ht1State.history = [];
-        session.history = [];
-        session.chotPredictions = [];
-        session.stats = {
-            totalGames: 0,
-            totalPredictions: 0,
-            correctPredictions: 0
-        };
-        ht1State.currentPrediction = null;
-        ht1State.currentChotPredictionForLog = null;
-        
-        saveHt1Sessions();
-        
-        // Send updates
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
-        sendSessionInfo();
-    }
-
-    function importHt1Data(data) {
+    function importSimulatedData(data) {
         if (!data || !data.sessions) return;
         
-        // Clear existing
-        ht1State.sessions = {};
-        ht1State.currentSessionId = null;
-        ht1State.history = [];
+        // Clear existing data
+        state.sessions = {};
+        state.currentSessionId = null;
         
-        // Import sessions
-        Object.keys(data.sessions).forEach(sessionId => {
-            const importedSession = data.sessions[sessionId];
-            
-            ht1State.sessions[sessionId] = {
-                id: sessionId,
-                name: importedSession.name || `Imported HT1 ${sessionId}`,
-                history: importedSession.history || [],
-                chotPredictions: [],
-                systemType: 'PATTERN_MATCHING',
-                stats: {
-                    totalGames: 0,
-                    totalPredictions: 0,
-                    correctPredictions: 0
-                }
-            };
-            
-            // Re-analyze imported history
-            if (importedSession.history && importedSession.history.length >= 10) {
-                for (let i = 10; i < importedSession.history.length; i++) {
-                    const historySlice = importedSession.history.slice(0, i);
-                    const tempState = { history: historySlice };
-                    const analysis = runHt1PatternAnalysis.call(tempState);
-                    
-                    if (analysis) {
-                        const actual = importedSession.history[i];
-                        const isCorrect = analysis.prediction === actual;
-                        
-                        ht1State.sessions[sessionId].chotPredictions.push({
-                            predicted: analysis.prediction,
-                            actual: actual,
-                            source: 'HT1_PATTERN_MATCHING',
-                            confidence: analysis.confidence,
-                            pattern: analysis.patternType
-                        });
-                        
-                        ht1State.sessions[sessionId].stats.totalPredictions++;
-                        if (isCorrect) {
-                            ht1State.sessions[sessionId].stats.correctPredictions++;
-                        }
-                    }
-                }
+        showLoadingModal('Đang nhập dữ liệu mô phỏng...');
+        
+        setTimeout(() => {
+            try {
+                runSimulation(data.sessions);
+                hideLoadingModal();
+                
+                // Send updates
+                sendAccuracyUpdate();
+                sendChotHistory();
+                sendSessionInfo();
+                
+                window.parent.postMessage({
+                    source: 'ht1',
+                    type: 'import_complete'
+                }, '*');
+            } catch (error) {
+                hideLoadingModal();
+                console.error('Import simulation error:', error);
             }
-            
-            ht1State.sessions[sessionId].stats.totalGames = importedSession.history.length;
-        });
-        
-        // Set first session as current
-        const sessionIds = Object.keys(ht1State.sessions);
-        if (sessionIds.length > 0) {
-            ht1State.currentSessionId = sessionIds[0];
-            ht1State.history = ht1State.sessions[sessionIds[0]].history;
-            
-            // Generate current prediction
-            if (ht1State.history.length >= 10) {
-                const currentAnalysis = runHt1PatternAnalysis();
-                if (currentAnalysis) {
-                    ht1State.currentPrediction = currentAnalysis;
-                    ht1State.currentChotPredictionForLog = {
-                        predicted: currentAnalysis.prediction,
-                        actual: null,
-                        source: 'HT1_PATTERN_MATCHING',
-                        confidence: currentAnalysis.confidence,
-                        pattern: currentAnalysis.patternType
-                    };
-                }
-            }
-        }
-        
-        saveHt1Sessions();
-        
-        // Send updates
-        sendSessionInfo();
-        sendAccuracyUpdate();
-        sendChotHistory();
-        sendPrediction();
-        
-        window.parent.postMessage({
-            source: 'ht1',
-            type: 'import_complete'
-        }, '*');
+        }, 100);
     }
 
-    function exportHt1Data() {
+    function exportSessionData() {
         const sessionsToExport = {};
-        
-        for (const sessionId in ht1State.sessions) {
+        for (const sessionId in state.sessions) {
             sessionsToExport[sessionId] = {
-                name: ht1State.sessions[sessionId].name,
-                history: ht1State.sessions[sessionId].history,
-                systemType: 'PATTERN_MATCHING',
-                stats: ht1State.sessions[sessionId].stats
+                name: state.sessions[sessionId].name,
+                history: state.sessions[sessionId].history
             };
         }
         
@@ -2582,48 +2235,20 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         }, '*');
     }
 
-    function resetHt1System() {
-        ht1State.sessions = {};
-        ht1State.currentSessionId = null;
-        ht1State.history = [];
-        ht1State.currentPrediction = null;
-        ht1State.currentChotPredictionForLog = null;
+    function resetSystem() {
+        state.sessions = {};
+        state.currentSessionId = null;
+        state.currentPrediction = null;
+        state.originalSystemPrediction = null;
+        state.currentFinalPrediction = null;
+        state.currentChotPredictionForLog = null;
         
-        localStorage.removeItem(STORAGE_KEY_SESSIONS);
-        localStorage.removeItem(STORAGE_KEY_LAST);
+        localStorage.removeItem('baccaratPatternSessions_v11_sim');
+        localStorage.removeItem('lastActiveSession_v11_sim');
         
-        // Create new default session
-        createHt1Session({ name: 'Phiên HT1 mới' });
-        
-        window.parent.postMessage({
-            source: 'ht1',
-            type: 'system_reset'
-        }, '*');
+        createNewSession();
+        updateAllUI();
     }
-
-    function updateHt1Analysis() {
-        // Generate new prediction based on current history
-        if (ht1State.history.length >= 10) {
-            const analysis = runHt1PatternAnalysis();
-            ht1State.currentPrediction = analysis;
-            
-            if (analysis) {
-                ht1State.currentChotPredictionForLog = {
-                    predicted: analysis.prediction,
-                    actual: null,
-                    source: 'HT1_PATTERN_MATCHING',
-                    confidence: analysis.confidence,
-                    pattern: analysis.patternType,
-                    timestamp: new Date().toISOString()
-                };
-                
-                sendPrediction();
-            }
-        }
-    }
-
-    // Initialize console log
-    console.log('HT1 Pattern Matching Adapter loaded successfully');
 })();
 </script>
 </body>
