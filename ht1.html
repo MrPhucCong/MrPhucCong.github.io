@@ -2052,12 +2052,11 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         }, '*');
     }
 
-    // =================== UPDATED FUNCTION: SYSTEM DETAILS ===================
+    // =================== NEW FUNCTION: SYSTEM DETAILS ===================
     function sendSystemDetails() {
         try {
             const details = {
-                verdict: null,      // 🧠 Phán Quyết (Phân Tích Tổng Hợp) - ĐẦY ĐỦ
-                verdictSimple: null, // 🧠 Phán Quyết đơn giản (P/B)
+                verdict: null,      // 🧠 Phán Quyết (Phân Tích Tổng Hợp)
                 chot: null,         // 🔐 Chốt Phán Quyết
                 range: null,        // Khoảng tỷ lệ
                 rangeAccuracy: null, // Tỉ lệ phần trăm của khoảng (đã làm tròn)
@@ -2066,20 +2065,13 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 intervalHistory: [] // Dữ liệu biểu đồ
             };
             
-            // 1. Lấy 🧠 Phán Quyết (Phân Tích Tổng Hợp) - ĐẦY ĐỦ
-            // Format: "P THEO" hoặc "B NGƯỢC"
-            if (state.currentFinalPrediction && state.currentFinalPrediction.prediction) {
-                const verdictType = state.currentFinalPrediction.verdict === 'follow' ? 'THEO' : 
-                                  state.currentFinalPrediction.verdict === 'against' ? 'NGƯỢC' : '';
-                
-                details.verdict = `${state.currentFinalPrediction.prediction} ${verdictType}`.trim();
-                details.verdictSimple = state.currentFinalPrediction.prediction;
-            } else if (state.currentPrediction && state.currentPrediction.prediction) {
+            // 1. Lấy 🧠 Phán Quyết (Phân Tích Tổng Hợp) - từ hệ thống chính
+            if (state.currentFinalPrediction) {
+                details.verdict = state.currentFinalPrediction.prediction;
+            } else if (state.currentPrediction) {
                 details.verdict = state.currentPrediction.prediction;
-                details.verdictSimple = state.currentPrediction.prediction;
             } else if (state.originalSystemPrediction) {
                 details.verdict = state.originalSystemPrediction;
-                details.verdictSimple = state.originalSystemPrediction;
             }
             
             // 2. Lấy 🔐 Chốt Phán Quyết - từ bảng "🔐 Chốt Phán Quyết"
@@ -2134,7 +2126,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 if (foundRange && rangeKey) {
                     details.range = rangeDisplay;
                     
-                    // Làm tròn tỉ lệ đến 1 chữ số thập phân
+                    // Làm tròn tỉ lệ đến 1 chữ số thập phân (64.7% thay vì 64.70588235294117%)
                     if (foundRange.rate > -1) {
                         details.rangeAccuracy = parseFloat(foundRange.rate.toFixed(1));
                     } else {
@@ -2192,7 +2184,6 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 details.rangeAccuracy = 0;
             }
             
-            // Gửi thông tin chi tiết hệ thống
             window.parent.postMessage({
                 source: 'ht1',
                 type: 'system_details_update',
@@ -2206,12 +2197,9 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 source: 'ht1',
                 type: 'system_details_update',
                 details: {
-                    verdict: state.currentFinalPrediction ? 
-                            `${state.currentFinalPrediction.prediction} ${state.currentFinalPrediction.verdict === 'follow' ? 'THEO' : state.currentFinalPrediction.verdict === 'against' ? 'NGƯỢC' : ''}`.trim() :
-                            (state.currentPrediction?.prediction || state.originalSystemPrediction),
-                    verdictSimple: state.currentFinalPrediction?.prediction || 
-                                 state.currentPrediction?.prediction || 
-                                 state.originalSystemPrediction,
+                    verdict: state.currentFinalPrediction?.prediction || 
+                            state.currentPrediction?.prediction || 
+                            state.originalSystemPrediction,
                     chot: state.currentChotPredictionForLog?.prediction,
                     range: "Lỗi tính toán",
                     rangeAccuracy: 0,
@@ -2595,4 +2583,3 @@ document.addEventListener('DOMContentLoaded', initializeApp)
 </script>
 </body>
 </html>
-
