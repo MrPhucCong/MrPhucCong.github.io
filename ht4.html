@@ -1953,14 +1953,6 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 correct: correct,
                 total: total
             }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht4',
-                type: 'accuracy_update',
-                accuracy: 0,
-                correct: 0,
-                total: 0
-            }, '*');
         }
     }
 
@@ -1971,12 +1963,6 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 source: 'ht4',
                 type: 'chot_history_update',
                 history: session.chotPredictions
-            }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht4',
-                type: 'chot_history_update',
-                history: []
             }, '*');
         }
     }
@@ -1993,12 +1979,6 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                     history: session.history,
                     current: true
                 }
-            }, '*');
-        } else {
-            window.parent.postMessage({
-                source: 'ht4',
-                type: 'session_update',
-                session: null
             }, '*');
         }
     }
@@ -2090,7 +2070,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 if (foundRange && rangeKey) {
                     details.range = rangeDisplay;
                     
-                    // Làm tròn tỉ lệ đến 1 chữ số thập phân
+                    // Làm tròn tỉ lệ đến 1 chữ số thập phân (64.7% thay vì 64.70588235294117%)
                     if (foundRange.rate > -1) {
                         details.rangeAccuracy = parseFloat(foundRange.rate.toFixed(1));
                     } else {
@@ -2176,7 +2156,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
     function createSession(sessionData) {
         if (!sessionData || !sessionData.name) return;
         
-        const newId = sessionData.id || `session-${Date.now()}`;
+        const newId = `session-${Date.now()}`;
         state.currentSessionId = newId;
         state.sessions[newId] = {
             name: sessionData.name,
