@@ -1813,6 +1813,14 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 correct: correct,
                 total: total
             }, '*');
+        } else {
+            window.parent.postMessage({
+                source: 'ht3',
+                type: 'accuracy_update',
+                accuracy: 0,
+                correct: 0,
+                total: 0
+            }, '*');
         }
     }
 
@@ -1823,6 +1831,12 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 source: 'ht3',
                 type: 'chot_history_update',
                 history: session.chotPredictions
+            }, '*');
+        } else {
+            window.parent.postMessage({
+                source: 'ht3',
+                type: 'chot_history_update',
+                history: []
             }, '*');
         }
     }
@@ -1839,6 +1853,12 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                     history: session.history,
                     current: true
                 }
+            }, '*');
+        } else {
+            window.parent.postMessage({
+                source: 'ht3',
+                type: 'session_update',
+                session: null
             }, '*');
         }
     }
@@ -1894,7 +1914,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 }
             }
             
-            // 3. Xác định khoảng tỷ lệ và tỉ lệ phần trăm
+            // 3. Xác định khoảng tỷ lệ và tỉ lệ phần trăm từ bảng "📊 Thống Kê Độ Tin Cậy"
             const currentConfidence = state.currentPrediction?.confidence;
             const session = state.sessions[state.currentSessionId];
             
@@ -1930,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 if (foundRange && rangeKey) {
                     details.range = rangeDisplay;
                     
-                    // Làm tròn tỉ lệ đến 1 chữ số thập phân (64.7% thay vì 64.70588235294117%)
+                    // Làm tròn tỉ lệ đến 1 chữ số thập phân
                     if (foundRange.rate > -1) {
                         details.rangeAccuracy = parseFloat(foundRange.rate.toFixed(1));
                     } else {
@@ -2048,6 +2068,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 updateSessionSelector();
                 updateAllUI();
                 sendSessionInfo();
+                sendSystemDetails();
             }
         }
     }
@@ -2160,7 +2181,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
     }
 
     function undoLast() {
-        if (!state.currentSessionId || !state.sessions[state.currentSessionId].history.length === 0) return;
+        if (!state.currentSessionId || state.sessions[state.currentSessionId].history.length === 0) return;
         
         const session = state.sessions[state.currentSessionId];
         const lastResult = session.history.pop();
@@ -2301,8 +2322,6 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 // Nếu là master data, cần xử lý khác
                 if (data.isMasterData) {
                     console.log('[HT3] Importing MASTER data');
-                    // Master data có thể không có cấu trúc HT3-specific
-                    // Cần chuyển đổi sang định dạng HT3
                     const convertedSessions = {};
                     
                     Object.keys(data.sessions).forEach(sessionId => {
