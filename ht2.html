@@ -1475,8 +1475,8 @@ function initializeApp() {
 }
 document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
-    <script>
-// =================== IFRAME COMMUNICATION FOR HT2 - COMPLETE ===================
+<script>
+// =================== IFRAME COMMUNICATION FOR HT2 - UPDATED ===================
 (function() {
     // Notify parent that system is ready
     window.addEventListener('load', function() {
@@ -1496,8 +1496,6 @@ document.addEventListener('DOMContentLoaded', initializeApp);
     });
 
     function handleMasterCommand(data) {
-        console.log("[HT2] Received command:", data.command);
-        
         switch(data.command) {
             case 'get_accuracy':
                 sendAccuracyUpdate();
@@ -1634,7 +1632,7 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         }, '*');
     }
 
-    // =================== NEW FUNCTION: SYSTEM DETAILS FOR HT2 ===================
+    // =================== NEW FUNCTION: SYSTEM DETAILS ===================
     function sendSystemDetails() {
         try {
             const details = {
@@ -1672,36 +1670,97 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 }
             }
             
-            // 3. Xác định khoảng tỷ lệ và tỉ lệ phần trăm (HT2 có logic riêng)
+            // 3. Xác định khoảng tỷ lệ và tỉ lệ phần trăm
+            const currentConfidence = state.currentPrediction?.confidence;
             const session = state.sessions[state.currentSessionId];
-            const recentChotPredictions = session?.chotPredictions?.slice(-8) || [];
             
-            if (recentChotPredictions.length >= 3) {
-                const correctCount = recentChotPredictions.filter(p => p.predicted === p.actual).length;
-                const accuracy = (correctCount / recentChotPredictions.length) * 100;
+            if (currentConfidence !== undefined && session && session.predictions) {
+                // Xác định khoảng confidence hiện tại thuộc khoảng nào
+                let foundRange = null;
+                let rangeKey = '';
+                let rangeDisplay = '';
                 
-                // HT2 sử dụng khoảng tin cậy riêng
-                let confidenceRange = "0-40%";
-                if (accuracy >= 75) confidenceRange = "75-100%";
-                else if (accuracy >= 60) confidenceRange = "60-75%";
-                else if (accuracy >= 40) confidenceRange = "40-60%";
+                // Ánh xạ confidence vào các khoảng dựa trên bảng "Thống Kê Độ Tin Cậy"
+                if (currentConfidence >= 90 && currentConfidence <= 100) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '90-100');
+                    rangeKey = '90-100%';
+                    rangeDisplay = '90-100%';
+                } else if (currentConfidence >= 80 && currentConfidence < 90) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '80-90');
+                    rangeKey = '80-90%';
+                    rangeDisplay = '80-90%';
+                } else if (currentConfidence >= 70 && currentConfidence < 80) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '70-80');
+                    rangeKey = '70-80%';
+                    rangeDisplay = '70-80%';
+                } else if (currentConfidence >= 60 && currentConfidence < 70) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '60-70');
+                    rangeKey = '60-70%';
+                    rangeDisplay = '60-70%';
+                } else if (currentConfidence >= 50 && currentConfidence < 60) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '50-60');
+                    rangeKey = '50-60%';
+                    rangeDisplay = '50-60%';
+                }
                 
-                details.range = confidenceRange;
-                details.rangeAccuracy = parseFloat(accuracy.toFixed(1));
-                details.rangeTotal = recentChotPredictions.length;
-                details.rangeWins = correctCount;
-                
-                // Lấy dữ liệu lịch sử cho biểu đồ (15 ván gần nhất)
-                const allChotPredictions = session?.chotPredictions || [];
-                const lastGames = allChotPredictions.slice(-15);
-                details.intervalHistory = lastGames.map((pred, index) => ({
-                    game: index + 1,
-                    predicted: pred.predicted,
-                    actual: pred.actual,
-                    isCorrect: pred.predicted === pred.actual
-                }));
+                if (foundRange && rangeKey) {
+                    details.range = rangeDisplay;
+                    
+                    // Làm tròn tỉ lệ đến 1 chữ số thập phân
+                    if (foundRange.rate > -1) {
+                        details.rangeAccuracy = parseFloat(foundRange.rate.toFixed(1));
+                    } else {
+                        details.rangeAccuracy = 0;
+                    }
+                    
+                    details.rangeTotal = foundRange.total || 0;
+                    details.rangeWins = foundRange.wins || 0;
+                    
+                    // Lấy tất cả predictions trong khoảng confidence này cho biểu đồ
+                    const allPredictions = session.predictions || [];
+                    const predictionsInRange = allPredictions.filter(p => {
+                        const conf = p.confidence || 0;
+                        if (rangeKey === '90-100%') return conf >= 90 && conf <= 100;
+                        if (rangeKey === '80-90%') return conf >= 80 && conf < 90;
+                        if (rangeKey === '70-80%') return conf >= 70 && conf < 80;
+                        if (rangeKey === '60-70%') return conf >= 60 && conf < 70;
+                        if (rangeKey === '50-60%') return conf >= 50 && conf < 60;
+                        return false;
+                    });
+                    
+                    // Chuẩn bị dữ liệu lịch sử cho biểu đồ
+                    details.intervalHistory = predictionsInRange.map((pred, index) => ({
+                        game: index + 1,
+                        predicted: pred.predicted,
+                        actual: pred.actual,
+                        confidence: pred.confidence,
+                        isCorrect: pred.predicted === pred.actual
+                    }));
+                    
+                } else {
+                    // Fallback: Sử dụng Khoảng Vàng hoặc Khoảng Tử Thần nếu không tìm thấy khoảng cụ thể
+                    if (state.goldenRange) {
+                        const maxDisplay = state.goldenRange.max === 100.1 ? 100 : state.goldenRange.max;
+                        details.range = `${state.goldenRange.min}-${maxDisplay}%`;
+                        details.rangeAccuracy = state.goldenRange.rate > -1 ? 
+                            parseFloat(state.goldenRange.rate.toFixed(1)) : 0;
+                        details.rangeTotal = state.goldenRange.total || 0;
+                        details.rangeWins = state.goldenRange.wins || 0;
+                    } else if (state.deathRange) {
+                        const maxDisplay = state.deathRange.max === 100.1 ? 100 : state.deathRange.max;
+                        details.range = `${state.deathRange.min}-${maxDisplay}%`;
+                        details.rangeAccuracy = state.deathRange.rate > -1 ? 
+                            parseFloat(state.deathRange.rate.toFixed(1)) : 0;
+                        details.rangeTotal = state.deathRange.total || 0;
+                        details.rangeWins = state.deathRange.wins || 0;
+                    } else {
+                        details.range = "Chưa xác định";
+                        details.rangeAccuracy = 0;
+                    }
+                }
             } else {
-                details.range = "Chưa đủ dữ liệu";
+                // Không có confidence hiện tại
+                details.range = "Chưa có dự đoán";
                 details.rangeAccuracy = 0;
             }
             
