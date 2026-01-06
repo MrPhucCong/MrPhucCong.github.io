@@ -1474,9 +1474,8 @@ function initializeApp() {
     document.getElementById('toggleSessionIcon').style.transform = 'rotate(-180deg)';
 }
 document.addEventListener('DOMContentLoaded', initializeApp);
-</script>
-<script>
-// =================== IFRAME COMMUNICATION FOR HT2 ===================
+</script><script>
+// =================== IFRAME COMMUNICATION FOR HT2 - UPDATED ===================
 (function() {
     // Notify parent that system is ready
     window.addEventListener('load', function() {
@@ -1511,6 +1510,10 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 
             case 'get_prediction':
                 sendPrediction();
+                break;
+                
+            case 'get_system_details':
+                sendSystemDetails();
                 break;
                 
             case 'create_session':
@@ -1599,8 +1602,74 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         window.parent.postMessage({
             source: 'ht2',
             type: 'prediction_update',
-            prediction: state.currentChotPredictionForLog?.prediction
+            prediction: state.currentChotPredictionForLog?.prediction || state.currentFinalPrediction?.prediction
         }, '*');
+    }
+
+    // =================== NEW FUNCTION: SYSTEM DETAILS ===================
+    function sendSystemDetails() {
+        try {
+            const details = {
+                verdict: null,
+                chot: null,
+                range: null,
+                rangeAccuracy: null,
+                intervalHistory: []
+            };
+            
+            // Get verdict prediction (Phán Quyết Tổng Hợp)
+            if (state.currentFinalPrediction) {
+                details.verdict = state.currentFinalPrediction.prediction;
+            } else if (state.currentPrediction) {
+                details.verdict = state.currentPrediction.prediction;
+            }
+            
+            // Get chot prediction (Chốt Phán Quyết)
+            if (state.currentChotPredictionForLog) {
+                details.chot = state.currentChotPredictionForLog.prediction || state.currentChotPredictionForLog;
+            }
+            
+            // For HT2: Get confidence range from system's confidence statistics
+            // HT2 has "Thống Kê Độ Tin Cậy" section which we can use
+            const session = state.sessions[state.currentSessionId];
+            if (session && session.chotPredictions && session.chotPredictions.length > 0) {
+                // Calculate performance in recent games
+                const recentPredictions = session.chotPredictions.slice(-8); // Last 8 games for HT2
+                if (recentPredictions.length >= 3) {
+                    const correctCount = recentPredictions.filter(p => p.predicted === p.actual).length;
+                    const accuracy = (correctCount / recentPredictions.length) * 100;
+                    
+                    // HT2 uses different confidence ranges
+                    let confidenceRange = "0-40%";
+                    if (accuracy >= 75) confidenceRange = "75-100%";
+                    else if (accuracy >= 60) confidenceRange = "60-75%";
+                    else if (accuracy >= 40) confidenceRange = "40-60%";
+                    
+                    details.range = confidenceRange;
+                    details.rangeAccuracy = accuracy.toFixed(1);
+                    
+                    // Get interval history for chart
+                    const allPredictions = session.chotPredictions;
+                    if (allPredictions.length > 0) {
+                        const lastGames = allPredictions.slice(-15); // Show last 15 games
+                        details.intervalHistory = lastGames.map((pred, index) => ({
+                            game: index + 1,
+                            predicted: pred.predicted,
+                            actual: pred.actual
+                        }));
+                    }
+                }
+            }
+            
+            window.parent.postMessage({
+                source: 'ht2',
+                type: 'system_details_update',
+                details: details
+            }, '*');
+            
+        } catch (error) {
+            console.error('[HT2] Error sending system details:', error);
+        }
     }
 
     function createSession(sessionData) {
@@ -1740,10 +1809,11 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         saveSessions();
         updateAllUI();
         
-        // Send updates
+        // Send updates including system details
         sendAccuracyUpdate();
         sendChotHistory();
         sendPrediction();
+        sendSystemDetails();
     }
 
     function importSimulatedData(data) {
@@ -1760,10 +1830,11 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 runSimulation(data.sessions);
                 hideLoadingModal();
                 
-                // Send updates
+                // Send all updates
                 sendAccuracyUpdate();
                 sendChotHistory();
                 sendSessionInfo();
+                sendSystemDetails();
                 
                 window.parent.postMessage({
                     source: 'ht2',
@@ -1771,7 +1842,8 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 }, '*');
             } catch (error) {
                 hideLoadingModal();
-                console.error('Import simulation error:', error);
+                console.error('[HT2] Import simulation error:', error);
+                showToast('Lỗi khi import dữ liệu', 'error');
             }
         }, 100);
     }
@@ -1781,7 +1853,10 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         for (const sessionId in state.sessions) {
             sessionsToExport[sessionId] = {
                 name: state.sessions[sessionId].name,
-                history: state.sessions[sessionId].history
+                history: state.sessions[sessionId].history,
+                chotPredictions: state.sessions[sessionId].chotPredictions || [],
+                predictions: state.sessions[sessionId].predictions || [],
+                verdictPredictions: state.sessions[sessionId].verdictPredictions || []
             };
         }
         
@@ -1805,6 +1880,10 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         
         createNewSession();
         updateAllUI();
+        
+        // Send updates
+        sendSessionInfo();
+        sendSystemDetails();
     }
 })();
 </script>
