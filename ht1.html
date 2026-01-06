@@ -1915,7 +1915,7 @@ function initializeApp() {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', initializeApp)
 </script>
-    <script>
+<script>
 // =================== IFRAME COMMUNICATION FOR HT1 - UPDATED ===================
 (function() {
     // Notify parent that system is ready
@@ -2055,6 +2055,8 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 chot: null,
                 range: null,
                 rangeAccuracy: null,
+                rangeTotal: 0,
+                rangeWins: 0,
                 intervalHistory: []
             };
             
@@ -2070,40 +2072,91 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 details.chot = state.currentChotPredictionForLog.prediction || state.currentChotPredictionForLog;
             }
             
-            // Get current confidence/range information
+            // Get current confidence and find the corresponding range
+            const currentConfidence = state.currentPrediction?.confidence;
             const session = state.sessions[state.currentSessionId];
-            if (session && session.chotPredictions && session.chotPredictions.length > 0) {
-                // Calculate confidence ranges based on recent performance
-                const recentPredictions = session.chotPredictions.slice(-10);
-                if (recentPredictions.length >= 3) {
-                    const correctCount = recentPredictions.filter(p => p.predicted === p.actual).length;
-                    const accuracy = (correctCount / recentPredictions.length) * 100;
+            
+            if (currentConfidence !== undefined && session && session.predictions) {
+                // Determine which confidence range the current prediction falls into
+                let foundRange = null;
+                let rangeKey = '';
+                
+                // Map confidence to ranges (based on your table)
+                if (currentConfidence >= 90 && currentConfidence <= 100) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '90-100');
+                    rangeKey = '90-100%';
+                } else if (currentConfidence >= 80 && currentConfidence < 90) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '80-90');
+                    rangeKey = '80-90%';
+                } else if (currentConfidence >= 70 && currentConfidence < 80) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '70-80');
+                    rangeKey = '70-80%';
+                } else if (currentConfidence >= 60 && currentConfidence < 70) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '60-70');
+                    rangeKey = '60-70%';
+                } else if (currentConfidence >= 50 && currentConfidence < 60) {
+                    foundRange = state.sessionConfidenceRanges?.find(r => r.key === '50-60');
+                    rangeKey = '50-60%';
+                }
+                
+                if (foundRange && rangeKey) {
+                    details.range = rangeKey;
+                    details.rangeAccuracy = foundRange.rate > -1 ? foundRange.rate : 0;
+                    details.rangeTotal = foundRange.total || 0;
+                    details.rangeWins = foundRange.wins || 0;
                     
-                    // Determine confidence range
-                    let confidenceRange = "0-30%";
-                    if (accuracy >= 70) confidenceRange = "70-100%";
-                    else if (accuracy >= 50) confidenceRange = "50-70%";
-                    else if (accuracy >= 30) confidenceRange = "30-50%";
+                    // Get all predictions in this confidence range for the interval chart
+                    const allPredictions = session.predictions || [];
+                    const predictionsInRange = allPredictions.filter(p => {
+                        const conf = p.confidence || 0;
+                        if (rangeKey === '90-100%') return conf >= 90 && conf <= 100;
+                        if (rangeKey === '80-90%') return conf >= 80 && conf < 90;
+                        if (rangeKey === '70-80%') return conf >= 70 && conf < 80;
+                        if (rangeKey === '60-70%') return conf >= 60 && conf < 70;
+                        if (rangeKey === '50-60%') return conf >= 50 && conf < 60;
+                        return false;
+                    });
                     
-                    details.range = confidenceRange;
-                    details.rangeAccuracy = accuracy.toFixed(1);
+                    // Prepare interval history data
+                    details.intervalHistory = predictionsInRange.map((pred, index) => ({
+                        game: index + 1,
+                        predicted: pred.predicted,
+                        actual: pred.actual,
+                        confidence: pred.confidence,
+                        isCorrect: pred.predicted === pred.actual
+                    }));
                     
-                    // Get all games in this confidence range from history
-                    const allPredictions = session.chotPredictions;
-                    let rangeGames = [];
-                    
-                    // For HT1, we'll use a simple approach based on pattern matching performance
-                    // In a real implementation, you would use the actual confidence intervals from the system
-                    if (allPredictions.length > 0) {
-                        // Take last 20 games for the interval chart
-                        const lastGames = allPredictions.slice(-20);
-                        details.intervalHistory = lastGames.map((pred, index) => ({
-                            game: index + 1,
-                            predicted: pred.predicted,
-                            actual: pred.actual
-                        }));
+                    // If no specific range found, check golden and death ranges
+                    if (!foundRange) {
+                        if (state.goldenRange) {
+                            details.range = `${state.goldenRange.min}-${state.goldenRange.max}% (Khoảng Vàng)`;
+                            details.rangeAccuracy = state.goldenRange.rate || 0;
+                        } else if (state.deathRange) {
+                            details.range = `${state.deathRange.min}-${state.deathRange.max}% (Khoảng Tử Thần)`;
+                            details.rangeAccuracy = state.deathRange.rate || 0;
+                        }
+                    }
+                } else {
+                    // Fallback to golden/death range if no specific range matched
+                    if (state.goldenRange) {
+                        details.range = `${state.goldenRange.min}-${state.goldenRange.max === 100.1 ? 100 : state.goldenRange.max}% (Khoảng Vàng)`;
+                        details.rangeAccuracy = state.goldenRange.rate || 0;
+                        details.rangeTotal = state.goldenRange.total || 0;
+                        details.rangeWins = state.goldenRange.wins || 0;
+                    } else if (state.deathRange) {
+                        details.range = `${state.deathRange.min}-${state.deathRange.max === 100.1 ? 100 : state.deathRange.max}% (Khoảng Tử Thần)`;
+                        details.rangeAccuracy = state.deathRange.rate || 0;
+                        details.rangeTotal = state.deathRange.total || 0;
+                        details.rangeWins = state.deathRange.wins || 0;
+                    } else {
+                        details.range = "Chưa xác định";
+                        details.rangeAccuracy = 0;
                     }
                 }
+            } else {
+                // No current confidence available
+                details.range = "Chưa có dự đoán";
+                details.rangeAccuracy = 0;
             }
             
             window.parent.postMessage({
@@ -2113,7 +2166,19 @@ document.addEventListener('DOMContentLoaded', initializeApp)
             }, '*');
             
         } catch (error) {
-            console.error('Error sending system details:', error);
+            console.error('[HT1] Error sending system details:', error);
+            // Send basic details even if there's an error
+            window.parent.postMessage({
+                source: 'ht1',
+                type: 'system_details_update',
+                details: {
+                    verdict: state.currentFinalPrediction?.prediction || state.currentPrediction?.prediction,
+                    chot: state.currentChotPredictionForLog?.prediction,
+                    range: "Lỗi tính toán",
+                    rangeAccuracy: 0,
+                    intervalHistory: []
+                }
+            }, '*');
         }
     }
 
@@ -2253,7 +2318,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         saveSessions();
         updateAllUI();
         
-        // Send updates including system details
+        // Send all updates including system details
         sendAccuracyUpdate();
         sendChotHistory();
         sendPrediction();
@@ -2313,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 }, '*');
             } catch (error) {
                 hideLoadingModal();
-                console.error('Import simulation error:', error);
+                console.error('[HT1] Import simulation error:', error);
                 showToast('Lỗi khi import dữ liệu', 'error');
             }
         }, 100);
