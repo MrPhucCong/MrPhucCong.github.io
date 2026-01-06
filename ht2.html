@@ -1476,7 +1476,7 @@ function initializeApp() {
 document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
 <script>
-// =================== IFRAME COMMUNICATION FOR HT2 - UPDATED ===================
+// =================== IFRAME COMMUNICATION FOR HT2 - COMPLETE & SYNCHRONIZED ===================
 (function() {
     // Notify parent that system is ready
     window.addEventListener('load', function() {
@@ -1600,19 +1600,14 @@ document.addEventListener('DOMContentLoaded', initializeApp);
     }
 
     function sendPrediction() {
-        const prediction = state.currentChotPredictionForLog?.prediction || 
-                          state.currentFinalPrediction?.prediction || 
-                          state.originalSystemPrediction ||
-                          state.currentPrediction?.prediction;
-        
         window.parent.postMessage({
             source: 'ht2',
             type: 'prediction_update',
-            prediction: prediction
+            prediction: state.currentChotPredictionForLog?.prediction || state.currentFinalPrediction?.prediction
         }, '*');
     }
 
-    // =================== NEW FUNCTION: SYSTEM DETAILS ===================
+    // =================== SYSTEM DETAILS FUNCTION - COMPLETE & SYNCED ===================
     function sendSystemDetails() {
         try {
             const details = {
@@ -1620,25 +1615,32 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 chot: null,         // 🔐 Chốt Phán Quyết
                 range: null,        // Khoảng tỷ lệ
                 rangeAccuracy: null, // Tỉ lệ phần trăm của khoảng (đã làm tròn)
-                rangeTotal: 0,      // Tổng số ván trong khoảng
-                rangeWins: 0,       // Số ván thắng trong khoảng
                 intervalHistory: [] // Dữ liệu biểu đồ
             };
             
-            // 1. Lấy 🧠 Phán Quyết (Phân Tích Tổng Hợp) - từ hệ thống chính
+            // 1. Lấy 🧠 Phán Quyết (Phân Tích Tổng Hợp) - từ bảng "🧠 Phán Quyết"
             if (state.currentFinalPrediction) {
                 details.verdict = state.currentFinalPrediction.prediction;
             } else if (state.currentPrediction) {
                 details.verdict = state.currentPrediction.prediction;
-            } else if (state.originalSystemPrediction) {
-                details.verdict = state.originalSystemPrediction;
+            } else {
+                // Fallback: Check from UI
+                const analysisResultDiv = document.getElementById('analysisResult');
+                if (analysisResultDiv && !analysisResultDiv.innerHTML.includes('Cần ít nhất')) {
+                    const text = analysisResultDiv.innerText || analysisResultDiv.textContent;
+                    if (text.includes('PLAYER')) {
+                        details.verdict = 'P';
+                    } else if (text.includes('BANKER')) {
+                        details.verdict = 'B';
+                    }
+                }
             }
             
             // 2. Lấy 🔐 Chốt Phán Quyết - từ bảng "🔐 Chốt Phán Quyết"
             if (state.currentChotPredictionForLog && state.currentChotPredictionForLog.prediction) {
                 details.chot = state.currentChotPredictionForLog.prediction;
             } else {
-                // Fallback: Kiểm tra từ UI nếu chưa có trong state
+                // Fallback: Check from UI
                 const finalChotResultText = document.getElementById('finalChotResultText');
                 if (finalChotResultText && !finalChotResultText.textContent.includes('Chờ tín hiệu')) {
                     const text = finalChotResultText.textContent;
@@ -1650,43 +1652,59 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 }
             }
             
-            // 3. Xác định khoảng tỷ lệ và tỉ lệ phần trăm từ "Thống Kê Độ Tin Cậy"
+            // 3. Lấy Khoảng tỷ lệ và Tỉ lệ khoảng từ bảng "📊 Thống Kê Độ Tin Cậy"
             const session = state.sessions[state.currentSessionId];
+            const currentConfidence = state.currentPrediction?.confidence;
             
-            if (session && session.predictions && session.predictions.length > 0) {
-                // Lấy dữ liệu từ bảng "Thống Kê Độ Tin Cậy" của HT2
-                const confidenceRanges = calculateConfidenceRangeStats(session.predictions);
+            if (currentConfidence !== undefined && session && session.predictions) {
+                // Get all confidence ranges from UI or calculate
+                const confidenceStats = calculateConfidenceRangeStats(session.predictions || []);
                 
-                // Tìm khoảng có tổng ván nhiều nhất hoặc có tỷ lệ cao nhất
-                let bestRange = null;
-                let highestRate = -1;
+                // Find which range the current confidence falls into
+                let foundRange = null;
+                let rangeDisplay = '';
                 
-                confidenceRanges.forEach(range => {
-                    if (range.total >= 3) {
-                        if (range.rate > highestRate) {
-                            highestRate = range.rate;
-                            bestRange = range;
-                        }
+                // Map to the ranges displayed in "Thống Kê Độ Tin Cậy"
+                if (currentConfidence >= 90 && currentConfidence <= 100) {
+                    foundRange = confidenceStats.find(r => r.key === '90-100');
+                    rangeDisplay = '90-100%';
+                } else if (currentConfidence >= 80 && currentConfidence < 90) {
+                    foundRange = confidenceStats.find(r => r.key === '80-90');
+                    rangeDisplay = '80-90%';
+                } else if (currentConfidence >= 70 && currentConfidence < 80) {
+                    foundRange = confidenceStats.find(r => r.key === '70-80');
+                    rangeDisplay = '70-80%';
+                } else if (currentConfidence >= 60 && currentConfidence < 70) {
+                    foundRange = confidenceStats.find(r => r.key === '60-70');
+                    rangeDisplay = '60-70%';
+                } else if (currentConfidence >= 50 && currentConfidence < 60) {
+                    foundRange = confidenceStats.find(r => r.key === '50-60');
+                    rangeDisplay = '50-60%';
+                }
+                
+                if (foundRange && rangeDisplay) {
+                    details.range = rangeDisplay;
+                    
+                    // Round to 1 decimal place
+                    if (foundRange.rate > -1) {
+                        details.rangeAccuracy = parseFloat(foundRange.rate.toFixed(1));
+                    } else {
+                        details.rangeAccuracy = 0;
                     }
-                });
-                
-                if (bestRange) {
-                    const maxDisplay = bestRange.max === 100.1 ? 100 : bestRange.max;
-                    details.range = `${bestRange.min}-${maxDisplay}%`;
                     
-                    // Làm tròn tỉ lệ đến 1 chữ số thập phân
-                    details.rangeAccuracy = parseFloat(bestRange.rate.toFixed(1));
-                    details.rangeTotal = bestRange.total || 0;
-                    details.rangeWins = bestRange.wins || 0;
-                    
-                    // Lấy tất cả predictions trong khoảng confidence này cho biểu đồ
+                    // Get predictions in this range for chart
                     const allPredictions = session.predictions || [];
                     const predictionsInRange = allPredictions.filter(p => {
                         const conf = p.confidence || 0;
-                        return conf >= bestRange.min && (conf < bestRange.max);
+                        if (rangeDisplay === '90-100%') return conf >= 90 && conf <= 100;
+                        if (rangeDisplay === '80-90%') return conf >= 80 && conf < 90;
+                        if (rangeDisplay === '70-80%') return conf >= 70 && conf < 80;
+                        if (rangeDisplay === '60-70%') return conf >= 60 && conf < 70;
+                        if (rangeDisplay === '50-60%') return conf >= 50 && conf < 60;
+                        return false;
                     });
                     
-                    // Chuẩn bị dữ liệu lịch sử cho biểu đồ
+                    // Prepare interval history for chart
                     details.intervalHistory = predictionsInRange.map((pred, index) => ({
                         game: index + 1,
                         predicted: pred.predicted,
@@ -1694,37 +1712,24 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                         confidence: pred.confidence,
                         isCorrect: pred.predicted === pred.actual
                     }));
+                    
                 } else {
-                    // Nếu không có khoảng nào, sử dụng dữ liệu tổng quát
-                    const totalPredictions = session.predictions.length;
-                    const correctPredictions = session.predictions.filter(p => p.predicted === p.actual).length;
-                    const overallAccuracy = totalPredictions > 0 ? 
-                        (correctPredictions / totalPredictions) * 100 : 0;
+                    // If no specific range, show general stats
+                    const allStats = calculateConfidenceRangeStats(session.predictions);
+                    const bestRange = allStats.filter(r => r.total >= 3).sort((a, b) => b.rate - a.rate)[0];
                     
-                    // Phân loại khoảng dựa trên độ chính xác tổng
-                    if (overallAccuracy >= 70) {
-                        details.range = "70-100%";
-                    } else if (overallAccuracy >= 50) {
-                        details.range = "50-70%";
+                    if (bestRange) {
+                        const maxDisplay = bestRange.max === 100.1 ? 100 : bestRange.max;
+                        details.range = `${bestRange.min}-${maxDisplay}%`;
+                        details.rangeAccuracy = bestRange.rate > -1 ? 
+                            parseFloat(bestRange.rate.toFixed(1)) : 0;
                     } else {
-                        details.range = "0-50%";
+                        details.range = "Chưa đủ dữ liệu";
+                        details.rangeAccuracy = 0;
                     }
-                    
-                    details.rangeAccuracy = parseFloat(overallAccuracy.toFixed(1));
-                    details.rangeTotal = totalPredictions;
-                    details.rangeWins = correctPredictions;
-                    
-                    // Lấy lịch sử chốt cho biểu đồ
-                    const chotHistory = session.chotPredictions || [];
-                    details.intervalHistory = chotHistory.map((pred, index) => ({
-                        game: index + 1,
-                        predicted: pred.predicted,
-                        actual: pred.actual,
-                        isCorrect: pred.predicted === pred.actual
-                    }));
                 }
             } else {
-                // Không có dữ liệu
+                // No current prediction
                 details.range = "Chưa có dự đoán";
                 details.rangeAccuracy = 0;
             }
@@ -1737,14 +1742,12 @@ document.addEventListener('DOMContentLoaded', initializeApp);
             
         } catch (error) {
             console.error('[HT2] Error sending system details:', error);
-            // Gửi thông tin cơ bản ngay cả khi có lỗi
+            // Send basic info even on error
             window.parent.postMessage({
                 source: 'ht2',
                 type: 'system_details_update',
                 details: {
-                    verdict: state.currentFinalPrediction?.prediction || 
-                            state.currentPrediction?.prediction || 
-                            state.originalSystemPrediction,
+                    verdict: state.currentFinalPrediction?.prediction || state.currentPrediction?.prediction,
                     chot: state.currentChotPredictionForLog?.prediction,
                     range: "Lỗi tính toán",
                     rangeAccuracy: 0,
@@ -1752,6 +1755,27 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                 }
             }, '*');
         }
+    }
+
+    function calculateConfidenceRangeStats(predictions) {
+        const ranges = [
+            { key: '50-60', min: 50, max: 60, total: 0, wins: 0, rate: -1 },
+            { key: '60-70', min: 60, max: 70, total: 0, wins: 0, rate: -1 },
+            { key: '70-80', min: 70, max: 80, total: 0, wins: 0, rate: -1 },
+            { key: '80-90', min: 80, max: 90, total: 0, wins: 0, rate: -1 },
+            { key: '90-100', min: 90, max: 100.1, total: 0, wins: 0, rate: -1 }
+        ];
+        
+        ranges.forEach(range => {
+            const predictionsForRange = predictions.filter(p => 
+                p.confidence >= range.min && p.confidence < range.max
+            );
+            range.total = predictionsForRange.length;
+            range.wins = predictionsForRange.filter(p => p.predicted === p.actual).length;
+            range.rate = range.total > 0 ? ((range.wins / range.total) * 100) : -1;
+        });
+        
+        return ranges;
     }
 
     function createSession(sessionData) {
@@ -1796,7 +1820,7 @@ document.addEventListener('DOMContentLoaded', initializeApp);
     function loadSession(sessionData) {
         if (!sessionData || !sessionData.id) return;
         
-        // Tạo session nếu chưa tồn tại
+        // Create session if doesn't exist
         if (!state.sessions[sessionData.id]) {
             state.sessions[sessionData.id] = {
                 name: sessionData.name || `Phiên ${sessionData.id}`,
@@ -1811,29 +1835,29 @@ document.addEventListener('DOMContentLoaded', initializeApp);
             };
         }
         
-        // Load session
+        // Load the session
         state.currentSessionId = sessionData.id;
         
-        // Nếu có history, mô phỏng lại
+        // If there's history, simulate it
         if (sessionData.history && sessionData.history.length > 0) {
-            // Xóa dữ liệu hiện tại
+            // Clear existing data
             state.sessions[sessionData.id].history = [];
             state.sessions[sessionData.id].predictions = [];
             state.sessions[sessionData.id].verdictPredictions = [];
             state.sessions[sessionData.id].chotPredictions = [];
             
-            // Mô phỏng từng kết quả
+            // Simulate each result
             sessionData.history.forEach((result, index) => {
                 state.sessions[sessionData.id].history.push(result);
                 
-                // Cập nhật phân tích sau mỗi kết quả
+                // Update analysis after each result
                 if (index >= 9) {
                     updateAnalysisUI();
                     updateChotAnalysisUI();
                 }
             });
             
-            // Tính toán lại mọi thứ
+            // Recalculate everything
             updateAllUI();
         }
         
@@ -1893,7 +1917,7 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         saveSessions();
         updateAllUI();
         
-        // Gửi tất cả cập nhật bao gồm chi tiết hệ thống
+        // Send updates including system details
         sendAccuracyUpdate();
         sendChotHistory();
         sendPrediction();
@@ -1901,19 +1925,21 @@ document.addEventListener('DOMContentLoaded', initializeApp);
     }
 
     function undoLast() {
-        if (!state.currentSessionId || !state.sessions[state.currentSessionId].history.length === 0) return;
-        
+        if (!state.currentSessionId) return;
         const session = state.sessions[state.currentSessionId];
+        if (session.history.length === 0) return;
+        
         const lastResult = session.history.pop();
-        const historyForUndo = session.history;
-
-        // Hoàn tác Chốt
-        if (session.chotPredictions && session.chotPredictions.length > 0) {
-            session.chotPredictions.pop();
-        }
-
-        // Hoàn tác Chốt Performance
-        const tier1PredictionToUndo = session.predictions.length > 0 ? session.predictions[session.predictions.length - 1].predicted : null;
+        
+        // Undo predictions
+        if (session.chotPredictions.length > 0) session.chotPredictions.pop();
+        if (session.predictions.length > 0) session.predictions.pop();
+        if (session.verdictPredictions && session.verdictPredictions.length > 0) session.verdictPredictions.pop();
+        
+        // Recalculate performance
+        const tier1PredictionToUndo = session.predictions.length > 0 ? 
+            session.predictions[session.predictions.length - 1]?.predicted : null;
+            
         if (tier1PredictionToUndo) {
             const actualWLHt1 = (tier1PredictionToUndo === lastResult) ? 'W' : 'L';
             const allSequencesChot = getChotAnalysisData();
@@ -1940,7 +1966,11 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                         }
                     }
                     if (perfDataChot[len] && perfDataChot[len].total > 0) {
-                        candidatesChot.push({ length: len, rate: perfDataChot[len].wins / perfDataChot[len].total, total: perfDataChot[len].total });
+                        candidatesChot.push({ 
+                            length: len, 
+                            rate: perfDataChot[len].wins / perfDataChot[len].total, 
+                            total: perfDataChot[len].total 
+                        });
                     }
                 }
                 
@@ -1953,57 +1983,20 @@ document.addEventListener('DOMContentLoaded', initializeApp);
             }
             session.chotOptimalLengths = newChotOptimalLengths;
         }
-
-        // Hoàn tác HT1 Performance
-        if (session.lengthPerformance) {
-            for (let len = 10; len <= 20; len++) {
-                if (historyForUndo.length < len) continue;
-                const pattern = historyForUndo.slice(-len);
-                const tempAllSessions = Object.values(state.sessions).map(s =>
-                    s.sessionId === state.currentSessionId ? { ...s, history: [...historyForUndo] } : s
-                );
-                const { prediction } = state.matcher.getPredictionForPattern(pattern, tempAllSessions);
-                if (prediction) {
-                    const stats = session.lengthPerformance[len];
-                    if (stats && stats.total > 0) {
-                        stats.total--;
-                        if (prediction === lastResult && stats.wins > 0) {
-                            stats.wins--;
-                        }
-                    }
-                }
-            }
-        }
         
-        // Tính lại optimalLength HT1
-        const candidatesHt1 = [];
-        if (session.lengthPerformance) {
-            for (const len in session.lengthPerformance) {
-                const stats = session.lengthPerformance[len];
-                if (stats.total > 0) {
-                    candidatesHt1.push({ length: parseInt(len, 10), rate: stats.wins / stats.total, total: stats.total });
-                }
-            }
-        }
+        // Recalculate HT1 optimal length
+        session.optimalLength = updateLengthPerformanceAndFindOptimal(
+            session.history, 
+            Object.values(state.sessions), 
+            null
+        );
         
-        if (candidatesHt1.length > 0) {
-            candidatesHt1.sort((a, b) => b.rate !== a.rate ? b.rate - a.rate : b.total - a.total);
-            session.optimalLength = candidatesHt1[0].length;
-        } else {
-            session.optimalLength = null;
-        }
-
-        // Pop predictions HT1 và Verdict
-        if (session.predictions.length > 0) session.predictions.pop();
-        if (session.verdictPredictions && session.verdictPredictions.length > 0) session.verdictPredictions.pop();
-
         saveSessions();
         updateAllUI();
         
-        // Gửi cập nhật sau khi hoàn tác
+        // Send updates
         sendAccuracyUpdate();
         sendChotHistory();
-        sendPrediction();
         sendSystemDetails();
     }
 
@@ -2022,7 +2015,7 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         saveSessions();
         updateAllUI();
         
-        // Gửi cập nhật
+        // Send updates
         sendAccuracyUpdate();
         sendChotHistory();
         sendSystemDetails();
@@ -2031,7 +2024,7 @@ document.addEventListener('DOMContentLoaded', initializeApp);
     function importSimulatedData(data) {
         if (!data || !data.sessions) return;
         
-        // Xóa dữ liệu hiện tại
+        // Clear existing data
         state.sessions = {};
         state.currentSessionId = null;
         
@@ -2039,11 +2032,10 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         
         setTimeout(() => {
             try {
-                // Nếu là master data, cần xử lý khác
+                // Check if it's master data
                 if (data.isMasterData) {
                     console.log('[HT2] Importing MASTER data');
-                    // Master data có thể không có cấu trúc HT2-specific
-                    // Cần chuyển đổi sang định dạng HT2
+                    // Convert master data to HT2 format
                     const convertedSessions = {};
                     
                     Object.keys(data.sessions).forEach(sessionId => {
@@ -2063,13 +2055,13 @@ document.addEventListener('DOMContentLoaded', initializeApp);
                     
                     runSimulation(convertedSessions);
                 } else {
-                    // Dữ liệu HT2 thông thường
+                    // Regular HT2 data
                     runSimulation(data.sessions);
                 }
                 
                 hideLoadingModal();
                 
-                // Gửi tất cả cập nhật
+                // Send all updates
                 sendAccuracyUpdate();
                 sendChotHistory();
                 sendSessionInfo();
@@ -2093,9 +2085,9 @@ document.addEventListener('DOMContentLoaded', initializeApp);
             sessionsToExport[sessionId] = {
                 name: state.sessions[sessionId].name,
                 history: state.sessions[sessionId].history,
-                chotPredictions: state.sessions[sessionId].chotPredictions,
-                predictions: state.sessions[sessionId].predictions,
-                verdictPredictions: state.sessions[sessionId].verdictPredictions
+                chotPredictions: state.sessions[sessionId].chotPredictions || [],
+                predictions: state.sessions[sessionId].predictions || [],
+                verdictPredictions: state.sessions[sessionId].verdictPredictions || []
             };
         }
         
@@ -2120,9 +2112,65 @@ document.addEventListener('DOMContentLoaded', initializeApp);
         createNewSession();
         updateAllUI();
         
-        // Gửi cập nhật
+        // Send updates
         sendSessionInfo();
         sendSystemDetails();
+    }
+
+    // Helper function to find next outcome in history (for Chot analysis)
+    function findNextOutcomeInHistory(pattern, historicalSequences) {
+        if (!pattern || pattern.length < 1) return { W: 0, L: 0, total: 0 };
+        let W = 0, L = 0;
+        for (const sessionId in historicalSequences) {
+            const history = historicalSequences[sessionId];
+            if (!history || history.length < pattern.length + 1) continue;
+            let i = -1;
+            while ((i = history.indexOf(pattern, i + 1)) !== -1) {
+                const nextCharIndex = i + pattern.length;
+                const prevCharDifferent = (i === 0 || history[i - 1] !== pattern[pattern.length - 1]);
+                if (prevCharDifferent && nextCharIndex < history.length) {
+                    if (history[nextCharIndex] === 'W') W++; else L++;
+                }
+            }
+        }
+        return { W, L, total: W + L };
+    }
+
+    // Helper function to get Chot analysis data
+    function getChotAnalysisData() {
+        const sequencesBySource = CHOT_SOURCES.reduce((acc, key) => { acc[key] = {}; return acc; }, {});
+        for (const sessionId in state.sessions) {
+            const session = state.sessions[sessionId];
+            let followSeq = '', againstSeq = '';
+            (session.verdictPredictions || []).forEach(p => {
+                const result = p.predicted === p.actual ? 'W' : 'L';
+                if (p.verdict === 'follow') followSeq += result;
+                else if (p.verdict === 'against') againstSeq += result;
+            });
+            sequencesBySource.follow[sessionId] = followSeq;
+            sequencesBySource.against[sessionId] = againstSeq;
+            
+            // For confidence ranges
+            const ranges = [
+                { key: '50-60', min: 50, max: 60 },
+                { key: '60-70', min: 60, max: 70 },
+                { key: '70-80', min: 70, max: 80 },
+                { key: '80-90', min: 80, max: 90 },
+                { key: '90-100', min: 90, max: 100.1 }
+            ];
+            
+            ranges.forEach(r => {
+                if (!sequencesBySource[r.key]) sequencesBySource[r.key] = {};
+                sequencesBySource[r.key][sessionId] = "";
+            });
+            
+            (session.predictions || []).forEach(p => {
+                const result = (p.predicted === p.actual) ? 'W' : 'L';
+                const foundRange = ranges.find(r => p.confidence >= r.min && p.confidence < r.max);
+                if (foundRange) sequencesBySource[foundRange.key][sessionId] += result;
+            });
+        }
+        return sequencesBySource;
     }
 })();
 </script>
