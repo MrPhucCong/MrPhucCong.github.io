@@ -1915,8 +1915,8 @@ function initializeApp() {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', initializeApp)
 </script>
-<script>
-// =================== IFRAME COMMUNICATION FOR HT1 ===================
+    <script>
+// =================== IFRAME COMMUNICATION FOR HT1 - UPDATED ===================
 (function() {
     // Notify parent that system is ready
     window.addEventListener('load', function() {
@@ -1951,6 +1951,10 @@ document.addEventListener('DOMContentLoaded', initializeApp)
                 
             case 'get_prediction':
                 sendPrediction();
+                break;
+                
+            case 'get_system_details':
+                sendSystemDetails();
                 break;
                 
             case 'create_session':
@@ -2039,8 +2043,78 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         window.parent.postMessage({
             source: 'ht1',
             type: 'prediction_update',
-            prediction: state.currentChotPredictionForLog?.prediction
+            prediction: state.currentChotPredictionForLog?.prediction || state.currentFinalPrediction?.prediction
         }, '*');
+    }
+
+    // =================== NEW FUNCTION: SYSTEM DETAILS ===================
+    function sendSystemDetails() {
+        try {
+            const details = {
+                verdict: null,
+                chot: null,
+                range: null,
+                rangeAccuracy: null,
+                intervalHistory: []
+            };
+            
+            // Get verdict prediction (Phán Quyết Tổng Hợp)
+            if (state.currentFinalPrediction) {
+                details.verdict = state.currentFinalPrediction.prediction;
+            } else if (state.currentPrediction) {
+                details.verdict = state.currentPrediction.prediction;
+            }
+            
+            // Get chot prediction (Chốt Phán Quyết)
+            if (state.currentChotPredictionForLog) {
+                details.chot = state.currentChotPredictionForLog.prediction || state.currentChotPredictionForLog;
+            }
+            
+            // Get current confidence/range information
+            const session = state.sessions[state.currentSessionId];
+            if (session && session.chotPredictions && session.chotPredictions.length > 0) {
+                // Calculate confidence ranges based on recent performance
+                const recentPredictions = session.chotPredictions.slice(-10);
+                if (recentPredictions.length >= 3) {
+                    const correctCount = recentPredictions.filter(p => p.predicted === p.actual).length;
+                    const accuracy = (correctCount / recentPredictions.length) * 100;
+                    
+                    // Determine confidence range
+                    let confidenceRange = "0-30%";
+                    if (accuracy >= 70) confidenceRange = "70-100%";
+                    else if (accuracy >= 50) confidenceRange = "50-70%";
+                    else if (accuracy >= 30) confidenceRange = "30-50%";
+                    
+                    details.range = confidenceRange;
+                    details.rangeAccuracy = accuracy.toFixed(1);
+                    
+                    // Get all games in this confidence range from history
+                    const allPredictions = session.chotPredictions;
+                    let rangeGames = [];
+                    
+                    // For HT1, we'll use a simple approach based on pattern matching performance
+                    // In a real implementation, you would use the actual confidence intervals from the system
+                    if (allPredictions.length > 0) {
+                        // Take last 20 games for the interval chart
+                        const lastGames = allPredictions.slice(-20);
+                        details.intervalHistory = lastGames.map((pred, index) => ({
+                            game: index + 1,
+                            predicted: pred.predicted,
+                            actual: pred.actual
+                        }));
+                    }
+                }
+            }
+            
+            window.parent.postMessage({
+                source: 'ht1',
+                type: 'system_details_update',
+                details: details
+            }, '*');
+            
+        } catch (error) {
+            console.error('Error sending system details:', error);
+        }
     }
 
     function createSession(sessionData) {
@@ -2111,12 +2185,10 @@ document.addEventListener('DOMContentLoaded', initializeApp)
             
             // Simulate each result
             sessionData.history.forEach((result, index) => {
-                // We need to simulate the analysis step by step
-                // For simplicity, we'll just add the results and let the system recalc
                 state.sessions[sessionData.id].history.push(result);
                 
                 // Update analysis after each result
-                if (index >= 9) { // Minimum history for analysis
+                if (index >= 9) {
                     updateAnalysisUI();
                     updateChotAnalysisUI();
                 }
@@ -2135,11 +2207,9 @@ document.addEventListener('DOMContentLoaded', initializeApp)
     function addResult(result) {
         if (!state.currentSessionId) return;
         
-        // Use existing addResult function
         const session = state.sessions[state.currentSessionId];
         if (!session) return;
         
-        // Call the existing addResult function
         const chotRec = state.currentChotPredictionForLog;
         const tier1Prediction = state.originalSystemPrediction;
         
@@ -2183,10 +2253,11 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         saveSessions();
         updateAllUI();
         
-        // Send updates
+        // Send updates including system details
         sendAccuracyUpdate();
         sendChotHistory();
         sendPrediction();
+        sendSystemDetails();
     }
 
     function importSimulatedData(data) {
@@ -2200,13 +2271,41 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         
         setTimeout(() => {
             try {
-                runSimulation(data.sessions);
+                // If it's master data, we need to process it differently
+                if (data.isMasterData) {
+                    console.log('[HT1] Importing MASTER data');
+                    // Master data may not have HT1-specific structures
+                    // We need to convert it to HT1 format
+                    const convertedSessions = {};
+                    
+                    Object.keys(data.sessions).forEach(sessionId => {
+                        const masterSession = data.sessions[sessionId];
+                        convertedSessions[sessionId] = {
+                            name: masterSession.name,
+                            history: masterSession.history || [],
+                            predictions: [],
+                            verdictPredictions: [],
+                            chotPredictions: [],
+                            lengthPerformance: {},
+                            optimalLength: null,
+                            chotLengthPerformance: CHOT_SOURCES.reduce((acc, key) => { acc[key] = {}; return acc; }, {}),
+                            chotOptimalLengths: CHOT_SOURCES.reduce((acc, key) => { acc[key] = null; return acc; }, {}),
+                        };
+                    });
+                    
+                    runSimulation(convertedSessions);
+                } else {
+                    // Regular HT1 data
+                    runSimulation(data.sessions);
+                }
+                
                 hideLoadingModal();
                 
-                // Send updates
+                // Send all updates
                 sendAccuracyUpdate();
                 sendChotHistory();
                 sendSessionInfo();
+                sendSystemDetails();
                 
                 window.parent.postMessage({
                     source: 'ht1',
@@ -2215,6 +2314,7 @@ document.addEventListener('DOMContentLoaded', initializeApp)
             } catch (error) {
                 hideLoadingModal();
                 console.error('Import simulation error:', error);
+                showToast('Lỗi khi import dữ liệu', 'error');
             }
         }, 100);
     }
@@ -2224,7 +2324,10 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         for (const sessionId in state.sessions) {
             sessionsToExport[sessionId] = {
                 name: state.sessions[sessionId].name,
-                history: state.sessions[sessionId].history
+                history: state.sessions[sessionId].history,
+                chotPredictions: state.sessions[sessionId].chotPredictions,
+                predictions: state.sessions[sessionId].predictions,
+                verdictPredictions: state.sessions[sessionId].verdictPredictions
             };
         }
         
@@ -2248,6 +2351,10 @@ document.addEventListener('DOMContentLoaded', initializeApp)
         
         createNewSession();
         updateAllUI();
+        
+        // Send updates
+        sendSessionInfo();
+        sendSystemDetails();
     }
 })();
 </script>
